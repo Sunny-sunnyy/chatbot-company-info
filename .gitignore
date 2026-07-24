@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+
+# Environment and secrets
+.env
+.env.*
+
+# Test and tool caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data artifacts
+data/*.json
+
+# OS/editor noise
+.DS_Store
