@@ -4,6 +4,7 @@
 
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra dữ liệu hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
+- 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -13,6 +14,12 @@ Tính tới thời điểm hiện tại, thư mục này có hai nhóm dữ li�
 
 - Dữ liệu gốc trong `data/raw`.
 - Dữ liệu đã được tách theo bảng trong `data/processed`.
+
+## File Hiện Có Trong Thư Mục Này
+
+### `README_data.md`
+
+File này mô tả nhiệm vụ của thư mục `data`, các thư mục con chứa dữ liệu, trạng thái dữ liệu hiện tại và cách dữ liệu được tạo bởi ingestion.
 
 ## Các Thư Mục Con Hiện Có
 

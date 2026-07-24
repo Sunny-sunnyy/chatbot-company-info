@@ -4,6 +4,8 @@
 
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
+- 2026-07-24 21:24 +07 - Cập nhật mô tả thư mục con `chunking` theo các file hiện có.
+- 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -11,7 +13,13 @@ Thư mục `ingestion` chứa mã xử lý dữ liệu đầu vào.
 
 Tính tới thời điểm hiện tại, phần đã có mã nguồn chính là đọc file JSON gốc và tách dữ liệu theo từng bảng.
 
-## Các File Và Thư Mục Hiện Có
+## File Tài Liệu Trong Thư Mục
+
+### `README_ingestion.md`
+
+File này mô tả nhiệm vụ của thư mục `ingestion`, nhiệm vụ hiện tại của từng file trong thư mục và liên kết tới README chi tiết của thư mục con `chunking`.
+
+## Nhiệm Vụ Các File Mã Nguồn
 
 ### `load_data.py`
 
@@ -52,11 +60,21 @@ Trạng thái hiện tại:
 - File đang rỗng.
 - Chưa có dòng mã nguồn nào trong file.
 
+## Thư Mục Con Hiện Có
+
 ### `chunking/`
 
 Thư mục con này chứa mã chunking.
 
-Hiện tại trong thư mục `chunking` có file `architectureTypes.py` đã có mã nguồn.
+Hiện tại trong thư mục `chunking` có các file mã nguồn:
+
+- `architectureTypes.py`
+- `companyInfo.py`
+- `heroSlides.py`
+- `interiorStyles.py`
+- `news.py`
+
+README chi tiết của thư mục con nằm ở `ingestion/chunking/README_chunking.md`.
 
 ## Cách Hoạt Động Hiện Tại
 

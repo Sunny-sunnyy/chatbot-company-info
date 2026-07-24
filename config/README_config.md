@@ -4,6 +4,7 @@
 
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
+- 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -15,6 +16,10 @@ Hiện tại thư mục này có hai nhiệm vụ chính:
 - Lưu cấu hình logging trong `logging.yaml`.
 
 ## Các File Hiện Có
+
+### `README_config.md`
+
+File này mô tả nhiệm vụ của thư mục `config` và nhiệm vụ hiện tại của từng file cấu hình trong thư mục.
 
 ### `settings.yaml`
 

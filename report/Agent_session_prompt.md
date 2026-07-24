@@ -3,6 +3,8 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-24 20:31 +07 - Tạo prompt đầu tiên để copy sang coding agent trong session mới.
+- 2026-07-24 21:24 +07 - Bổ sung quy tắc README phải mô tả nhiệm vụ của từng file trong thư mục.
+- 2026-07-24 21:39 +07 - Làm rõ README phải có phần riêng mô tả nhiệm vụ các file mã nguồn.
 
 ## Nội Dung Prompt Để Copy Sang Session Mới
 
@@ -23,6 +25,8 @@ Nhiệm vụ của bạn là đọc đúng các file cần thiết để nắm n
 - Không bịa đặt chức năng chưa có trong code.
 - Không mô tả folder/file rỗng như thể đã được phát triển.
 - README của mỗi folder phải phản ánh đúng trạng thái mã nguồn và dữ liệu tại thời điểm kiểm tra.
+- README của mỗi folder phải mô tả nhiệm vụ của thư mục và nhiệm vụ hoặc trạng thái hiện tại của từng file trong thư mục đó, bao gồm cả file README của chính thư mục nếu file đó tồn tại.
+- Với folder có file mã nguồn, README phải có phần riêng tên `Nhiệm Vụ Các File Mã Nguồn` và mô tả từng file mã nguồn trong folder đó.
 - Nếu README lệch rõ ràng với code hiện tại, hãy báo ngắn rằng bạn sẽ cập nhật rồi tự sửa README.
 - Khi cập nhật tài liệu, luôn thêm dòng mới vào mục `Nhật Ký Cập Nhật` với giờ Việt Nam `UTC+7`.
 - Không commit trừ khi tôi yêu cầu rõ ràng.
@@ -92,6 +96,8 @@ Khi cập nhật README:
 - Thêm dòng mới vào `Nhật Ký Cập Nhật`.
 - Mô tả nhiệm vụ folder nếu folder đã có nội dung rõ ràng.
 - Liệt kê các file hiện có trong folder.
+- Mô tả nhiệm vụ hoặc trạng thái hiện tại của từng file trong folder, bao gồm cả file README của chính folder nếu có.
+- Nếu folder có file mã nguồn, thêm hoặc cập nhật phần `Nhiệm Vụ Các File Mã Nguồn`.
 - Với file đã có code, mô tả chức năng thật dựa trên code.
 - Với file dữ liệu, mô tả dữ liệu thật dựa trên cấu trúc/count đã kiểm tra.
 - Với file rỗng, ghi rõ file đang rỗng và chưa được phát triển.

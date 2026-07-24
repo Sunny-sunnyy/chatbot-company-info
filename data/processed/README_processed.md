@@ -4,6 +4,7 @@
 
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra dữ liệu hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
+- 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -12,6 +13,10 @@ Thư mục `data/processed` chứa các file JSON đã được tách theo từn
 Các file này là kết quả hiện tại của `ingestion/load_data.py`.
 
 ## Các File Hiện Có
+
+### `README_processed.md`
+
+File này mô tả nhiệm vụ của thư mục `data/processed` và nhiệm vụ hiện tại của từng file JSON đã xử lý trong thư mục.
 
 ### `architectureTypes.json`
 

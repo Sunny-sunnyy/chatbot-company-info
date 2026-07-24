@@ -4,6 +4,8 @@
 
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
+- 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -14,7 +16,13 @@ Tính tới thời điểm hiện tại, thư mục này có hai nhiệm vụ:
 - Đọc cấu hình từ YAML và biến môi trường.
 - Thiết lập logging cho toàn bộ ứng dụng.
 
-## Các File Hiện Có
+## File Tài Liệu Trong Thư Mục
+
+### `README_core.md`
+
+File này mô tả nhiệm vụ của thư mục `core` và nhiệm vụ hiện tại của từng file mã nguồn dùng chung trong thư mục.
+
+## Nhiệm Vụ Các File Mã Nguồn
 
 ### `settings_loader.py`
 
