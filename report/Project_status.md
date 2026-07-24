@@ -4,6 +4,7 @@
 
 - 2026-07-24 20:06 +07 - Tạo bản ghi trạng thái dự án sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ ghi những phần đã tồn tại trong dự án.
+- 2026-07-24 22:06 +07 - Cập nhật trạng thái chunking theo mã nguồn hiện tại trong `ingestion/chunking` và `ingestion/helpers`.
 
 ## Mốc Học Hiện Tại
 
@@ -11,7 +12,7 @@ Dự án hiện đang ở trạng thái sau khi hoàn thành buổi 2 của khó
 
 Buổi 1 giới thiệu cấu trúc tổng thể của một chatbot RAG dùng dữ liệu công ty. Luồng tổng quan được trình bày trong buổi học gồm: nạp dữ liệu, chia dữ liệu thành các phần nhỏ, tạo chunk, tạo embedding, lưu vào vector store, truy xuất dữ liệu liên quan khi người dùng hỏi, ghép context vào prompt và gọi LLM để trả lời.
 
-Buổi 2 đã triển khai các phần đầu tiên của luồng đó: cấu hình settings, cấu hình logging, tách file JSON gốc thành các file JSON theo từng bảng, và bắt đầu viết hàm chunking cho bảng `architectureTypes`.
+Buổi 2 đã triển khai các phần đầu tiên của luồng đó: cấu hình settings, cấu hình logging, tách file JSON gốc thành các file JSON theo từng bảng, và bắt đầu viết các hàm chunking theo bảng.
 
 ## Mục Tiêu Dự Án
 
@@ -46,7 +47,18 @@ Các thư mục chính hiện có:
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
-`ingestion/chunking/architectureTypes.py` đã có hàm `chunk_architecture_types()`. Hàm này đọc `data/processed/architectureTypes.json`, kiểm tra kiểu dữ liệu, lấy một số field của từng loại kiến trúc, tạo text tiếng Việt và metadata cho chunk.
+`ingestion/chunking` hiện có các module chunking cho nhiều bảng dữ liệu đã xử lý:
+
+- `architectureTypes.py`: tạo chunk cho loại kiến trúc từ `architectureTypes.json`.
+- `companyInfo.py`: tạo chunk tổng quan, mô tả và thông tin liên hệ công ty từ `companyInfo.json`.
+- `heroSlides.py`: tạo chunk cho hero slide từ `heroSlides.json`.
+- `interiorStyles.py`: tạo chunk cho phong cách nội thất từ `interiorStyles.json`.
+- `newCategories.py`: tạo chunk cho danh mục tin tức từ `newsCategories.json`.
+- `news.py`: chuyển HTML tin tức sang text, chia nội dung thành đoạn và tạo chunk từ `news.json`.
+- `projectCategories.py`: tạo chunk cho danh mục dự án từ `projectCategories.json`.
+- `projects.py`: tạo nhiều loại chunk cho dự án từ `projects.json`, gồm overview, description, style, context, specs và media.
+
+`ingestion/helpers/make_metadata.py` hiện có hàm `make_metadata()` để thêm `chunk_id` UUID và merge metadata. `ingestion/helpers/split_paragraphs.py` hiện có hàm `split_paragraphs()` để chia text dài thành các đoạn nhỏ.
 
 ## Trạng Thái Dữ Liệu Hiện Tại
 

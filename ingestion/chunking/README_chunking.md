@@ -7,12 +7,24 @@
 - 2026-07-24 21:18 +07 - Cập nhật trạng thái sau khi thêm `heroSlides.py` và đối chiếu các file chunking hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả `interiorStyles.py`, `news.py` và nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
+- 2026-07-24 22:06 +07 - Cập nhật theo trạng thái hiện tại: bổ sung `newCategories.py`, `projectCategories.py`, `projects.py` và ghi nhận helper metadata/split đoạn văn.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `ingestion/chunking` chứa mã chuyển dữ liệu đã xử lý thành chunk.
 
-Tính tới thời điểm hiện tại, thư mục này có mã chunking cho `architectureTypes.json`, `companyInfo.json`, `heroSlides.json`, `interiorStyles.json` và `news.json`.
+Tính tới thời điểm hiện tại, thư mục này có mã chunking cho các file processed JSON sau:
+
+- `architectureTypes.json`
+- `companyInfo.json`
+- `heroSlides.json`
+- `interiorStyles.json`
+- `newsCategories.json`
+- `news.json`
+- `projectCategories.json`
+- `projects.json`
+
+Các file chunking dùng chung cấu hình từ `core.settings_loader.load_settings()` và logger tên `ingestion`.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -141,6 +153,69 @@ Nội dung hiện tại:
 - Gọi `make_metadata(...)` để tạo metadata cho từng chunk.
 - Trả về danh sách chunk hợp lệ.
 
+### `newCategories.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Đọc `data/processed/newsCategories.json`.
+- Kiểm tra file tồn tại.
+- Đọc JSON bằng UTF-8.
+- Chuyển dữ liệu dạng dictionary thành list nếu cần.
+- Kiểm tra dữ liệu có phải list không.
+- Bỏ qua category không phải dictionary.
+- Lấy các field `id`, `name`, `slug`.
+- Bỏ qua category thiếu `name`.
+- Tạo `base_metadata` với `type` là `news_category`.
+- Tạo text mô tả danh mục tin tức.
+- Gọi `make_metadata(...)` để tạo metadata cuối cùng.
+- Trả về danh sách chunk hợp lệ.
+
+Tên file hiện tại là `newCategories.py`, còn dữ liệu đầu vào là `newsCategories.json`.
+
+### `projectCategories.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Đọc `data/processed/projectCategories.json`.
+- Kiểm tra file tồn tại.
+- Đọc JSON bằng UTF-8.
+- Chuyển dữ liệu dạng dictionary thành list nếu cần.
+- Kiểm tra dữ liệu có phải list không.
+- Bỏ qua category không phải dictionary.
+- Lấy các field `id`, `name`, `slug`.
+- Bỏ qua category thiếu `name`.
+- Tạo `base_metadata` với `type` là `project_category`.
+- Tạo text mô tả danh mục dự án.
+- Gọi `make_metadata(...)` để tạo metadata cuối cùng.
+- Trả về danh sách chunk hợp lệ.
+
+### `projects.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Đọc `data/processed/projects.json`.
+- Kiểm tra file tồn tại.
+- Đọc JSON bằng UTF-8.
+- Chuyển dữ liệu dạng dictionary thành list nếu cần.
+- Kiểm tra dữ liệu có phải list không.
+- Bỏ qua project không phải dictionary.
+- Lấy các field chính như `id`, `title`, `slug`, `investor`, `location`, `description`, `thumbnailUrl`, `completedDate`, `area`, `category`, `interiorStyle`.
+- Tạo `base_metadata` với `type` là `project`.
+- Tạo chunk overview từ tên dự án.
+- Dùng `split_paragraphs(...)` để chia mô tả dự án và tạo các chunk description.
+- Tạo chunk style từ danh mục dự án và phong cách nội thất.
+- Tạo chunk context từ địa điểm và chủ đầu tư.
+- Tạo chunk specs từ diện tích và thời gian hoàn thành.
+- Tạo chunk media từ ảnh minh họa.
+- Gọi `make_metadata(...)` để tạo metadata cho từng chunk.
+- Trả về danh sách chunk hợp lệ.
+
 ## Cách Hoạt Động Hiện Tại
 
 Các file trong thư mục này hiện đọc dữ liệu từ:
@@ -150,7 +225,10 @@ data/processed/architectureTypes.json
 data/processed/companyInfo.json
 data/processed/heroSlides.json
 data/processed/interiorStyles.json
+data/processed/newsCategories.json
 data/processed/news.json
+data/processed/projectCategories.json
+data/processed/projects.json
 ```
 
 Kết quả trả về của hàm là list các dictionary. Mỗi dictionary có hai key:
@@ -160,10 +238,14 @@ Kết quả trả về của hàm là list các dictionary. Mỗi dictionary có
 
 ## Ghi Chú Kỹ Thuật
 
-Mã nguồn hiện import `ingestion.helpers.make_metadata`. Trong cây thư mục hiện tại, tôi không thấy thư mục `ingestion/helpers` trong lần kiểm tra này.
+Nhiều file chunking đang dùng `ingestion.helpers.make_metadata`. Helper này hiện tồn tại tại `ingestion/helpers/make_metadata.py` và có nhiệm vụ merge metadata gốc với metadata bổ sung, đồng thời thêm `chunk_id` dạng UUID.
+
+`news.py` và `projects.py` đang dùng `ingestion.helpers.split_paragraphs`. Helper này hiện tồn tại tại `ingestion/helpers/split_paragraphs.py` và có nhiệm vụ chia text dài thành các đoạn nhỏ theo giới hạn độ dài.
 
 Trong dữ liệu mẫu đã kiểm tra, nhiều bản ghi `architectureTypes.json` có `description` là `null`. Mã hiện tại chỉ tạo chunk khi có cả `name` và `description`.
 
 Timestamp `created_at` trong metadata được tạo bằng `datetime.utcnow().isoformat()`.
 
 `heroSlides.py` không dùng `make_metadata`; file này tạo metadata trực tiếp theo ảnh tham khảo trong `tai_lieu/anh1.png`, `tai_lieu/anh2.png` và `tai_lieu/anh3.png`.
+
+Các file bytecode trong `ingestion/chunking/__pycache__` là file sinh tự động khi chạy Python, không phải mã nguồn cần bảo trì trực tiếp.
