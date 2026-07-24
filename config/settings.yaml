@@ -35,9 +35,11 @@ vector_database:
 
 # Cau hinh model LLM
 llm:
-  provider: ollama
-  model_name: qwen2.5:3b
-  base_url: http://localhost:11434
+  provider: openrouter
+  model_name: qwen/qwen3.5-9b
+  base_url: https://openrouter.ai/api/v1
+  openrouter_api_key: null
+  openai_api_key: null
   temperature: 0.2
   max_tokens: 1024              # Giảm từ 1024 → 512 để nhanh hơn
   timeout: 60                  # request timeout in seconds
