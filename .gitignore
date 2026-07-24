@@ -18,6 +18,7 @@ htmlcov/
 
 # Local data artifacts
 data/*.json
+tai_lieu/
 
 # OS/editor noise
 .DS_Store
