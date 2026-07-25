@@ -9,6 +9,7 @@
 - 2026-07-25 17:34 +07 - Nâng cấp CodeGraph lên `1.5.0`, init index local cho repo và ignore `.codegraph/`.
 - 2026-07-25 17:37 +07 - Bổ sung hướng dẫn sử dụng CodeGraph vào `report/Agent_session_prompt.md`.
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/4.txt`, kiểm tra code embedding/vectorstore và audit README theo folder.
+- 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò và luồng hoạt động của file mã nguồn trong README các folder có Python code.
 
 ## Mốc Học Hiện Tại
 
@@ -52,7 +53,7 @@ Các thư mục chính hiện có:
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
-`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Trạng thái hiện tại của file này chưa chạy được nguyên vẹn vì đang import `ingestion.chunking.InteriorStyles` trong khi file thật là `ingestion/chunking/interiorStyles.py`. Ngoài ra, phần `vectorstore` hiện có code nhưng còn lỗi import/module nên chưa xác nhận được luồng upsert end-to-end.
+`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Trạng thái hiện tại của file này chưa chạy được nguyên vẹn vì đang import `ingestion.chunking.interiorStylesnteriorStyles` trong khi file thật là `ingestion/chunking/interiorStyles.py`. Ngoài ra, phần `vectorstore` hiện có code nhưng còn lỗi import/module nên chưa xác nhận được luồng upsert end-to-end.
 
 `ingestion/chunking` hiện có các module chunking cho nhiều bảng dữ liệu đã xử lý:
 
@@ -88,7 +89,7 @@ Các file sau hiện tồn tại nhưng đang rỗng:
 
 ## Trạng Thái Chạy Hiện Tại
 
-`ingestion/pipeline.py` hiện chưa import được vì file đang import `ingestion.chunking.InteriorStyles`, trong khi file thật là `ingestion/chunking/interiorStyles.py`.
+`ingestion/pipeline.py` hiện chưa import được vì file đang import `ingestion.chunking.interiorStylesnteriorStyles`, trong khi file thật là `ingestion/chunking/interiorStyles.py`.
 
 Các module local trong thư mục `vectorstore` hiện chưa import được bằng `import vectorstore.qdrant` trong môi trường `uv run`, vì Python đang resolve `vectorstore` tới package dependency trong `.venv/site-packages/vectorstore`.
 
@@ -156,3 +157,5 @@ Vector database đang được cấu hình là Qdrant, tên collection là `nmk_
 Nhà cung cấp LLM trong settings đang là `openrouter`, tên model đang là `qwen/qwen3.5-9b`, temperature là `0.2`.
 
 Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point để lưu vào Qdrant. Phần retrieval, LLM và entrypoint chat chưa có mã triển khai.
+
+README ở các folder có file Python thật hiện đã được bổ sung phần giải thích vai trò file mã nguồn, hàm hoặc luồng chính, input/output khi rõ ràng và trạng thái chạy hiện tại nếu luồng chưa hoàn chỉnh. Các file rỗng vẫn được ghi rõ là chưa phát triển.

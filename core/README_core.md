@@ -6,6 +6,7 @@
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
+- 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file mã nguồn trong thư mục.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -50,6 +51,15 @@ Hàm `load_settings()` đang làm các việc sau:
 - Ghi đè cấu hình reranking bằng `RERANKING_MODEL`, `RERANKING_DEVICE`, `RERANKING_TOP_K` nếu có.
 - Trả về dictionary `settings`.
 
+Vai trò và luồng hoạt động:
+
+- `settings_loader.py` chịu trách nhiệm gom cấu hình runtime của dự án từ `config/settings.yaml` và biến môi trường.
+- `load_dotenv(ENV_PATH)` được gọi ở cấp module để nạp `.env` vào environment, nhưng tài liệu không đọc hoặc ghi nội dung secret.
+- `load_settings()` đọc YAML trước để lấy cấu hình mặc định, sau đó ghi đè từng nhóm cấu hình bằng biến môi trường nếu biến đó tồn tại.
+- Input chính là file `config/settings.yaml` và các biến môi trường đã nạp.
+- Output chính là một dictionary `settings` đã sẵn sàng cho các module khác dùng chung.
+- Đây là điểm tập trung cấu hình cho `data`, `embedding`, `vector_database`, `llm`, `retrieval` và `reranking`.
+
 ### `logging_setup.py`
 
 File này đã có mã nguồn.
@@ -68,6 +78,14 @@ Hàm `setup_logging()` đang làm các việc sau:
 - Mở file `config/logging.yaml`.
 - Đọc YAML bằng `yaml.safe_load`.
 - Áp dụng cấu hình logging bằng `logging.config.dictConfig`.
+
+Vai trò và luồng hoạt động:
+
+- `logging_setup.py` chịu trách nhiệm khởi tạo logging cho toàn bộ ứng dụng theo cấu hình YAML.
+- `setup_logging()` đảm bảo thư mục `logs` tồn tại trước khi `FileHandler` ghi log.
+- Hàm đọc `config/logging.yaml`, chuyển YAML thành dictionary Python, rồi truyền vào `logging.config.dictConfig`.
+- Input chính là file `config/logging.yaml`.
+- Output là trạng thái logging global đã được cấu hình; các module khác có thể gọi `logging.getLogger("<ten_logger>")` để ghi log theo cấu hình này.
 
 ## Cách Hoạt Động Hiện Tại
 

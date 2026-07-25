@@ -8,6 +8,7 @@
 - 2026-07-25 17:23 +07 - Cập nhật mô tả `Project_status.md` theo snapshot hiện tại của repo.
 - 2026-07-25 17:37 +07 - Cập nhật mô tả `Agent_session_prompt.md` sau khi bổ sung hướng dẫn sử dụng CodeGraph cho coding agent.
 - 2026-07-25 18:42 +07 - Cập nhật mô tả `Project_status.md` sau khi audit trạng thái dự án theo buổi 4.
+- 2026-07-25 20:22 +07 - Cập nhật mô tả `Project_status.md` và `Agent_session_prompt.md` sau khi bổ sung chuẩn giải thích vai trò file mã nguồn trong README.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -29,6 +30,7 @@ Nội dung hiện có:
 - Trạng thái chạy hiện tại của pipeline và vector store.
 - Trạng thái dữ liệu hiện tại.
 - Quyết định kỹ thuật hiện tại.
+- Chuẩn README hiện tại cho các folder có file Python thật.
 
 ### `README_report.md`
 
@@ -38,7 +40,7 @@ File này mô tả chính thư mục `report` và trạng thái hiện tại c�
 
 File này chứa prompt có thể copy sang coding agent trong session mới.
 
-Nội dung file hướng dẫn agent đọc đúng tài liệu ngữ cảnh, đọc transcript đúng buổi học được yêu cầu, đối chiếu code với README theo folder, cập nhật `Project_status.md`, cập nhật README khi lệch trạng thái thật, không bịa đặt chức năng chưa có trong mã nguồn, và sử dụng CodeGraph đúng cách khi cần hiểu flow hoặc quan hệ symbol trong code.
+Nội dung file hướng dẫn agent đọc đúng tài liệu ngữ cảnh, đọc transcript đúng buổi học được yêu cầu, đối chiếu code với README theo folder, cập nhật `Project_status.md`, cập nhật README khi lệch trạng thái thật, không bịa đặt chức năng chưa có trong mã nguồn, giải thích vai trò/hàm/luồng chính của file mã nguồn đã có code, ghi rõ file rỗng là chưa phát triển, và sử dụng CodeGraph đúng cách khi cần hiểu flow hoặc quan hệ symbol trong code.
 
 ## Cách Hoạt Động Hiện Tại
 

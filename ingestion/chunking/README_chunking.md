@@ -8,6 +8,7 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả `interiorStyles.py`, `news.py` và nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-24 22:06 +07 - Cập nhật theo trạng thái hiện tại: bổ sung `newCategories.py`, `projectCategories.py`, `projects.py` và ghi nhận helper metadata/split đoạn văn.
+- 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file chunking.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -80,6 +81,14 @@ Text chunk hiện được tạo từ:
 - Tên phong cách kiến trúc.
 - Mô tả phong cách kiến trúc.
 
+Vai trò và luồng hoạt động:
+
+- `architectureTypes.py` chịu trách nhiệm chuyển dữ liệu loại kiến trúc thành chunk dạng định nghĩa.
+- `chunk_architecture_types()` đọc `architectureTypes.json`, chuẩn hóa dữ liệu dictionary thành list nếu cần, kiểm tra từng item rồi lấy `id`, `slug`, `name` và `description`.
+- Hàm chỉ tạo chunk khi có cả `name` và `description`.
+- Metadata được tạo qua `make_metadata(...)` với `chunk_type="definition"` và `priority=3`.
+- Output là `list[dict]`, mỗi phần tử có `text` và `metadata`.
+
 ### `companyInfo.py`
 
 File này đã có mã nguồn.
@@ -96,6 +105,14 @@ Nội dung hiện tại:
 - Tạo chunk mô tả từ mô tả công ty và tổng số dự án nếu có.
 - Tạo chunk thông tin liên hệ từ hotline, email, địa chỉ, giờ làm việc, website và mạng xã hội nếu có.
 - Dùng `make_metadata(...)` để tạo metadata cho từng chunk.
+
+Vai trò và luồng hoạt động:
+
+- `companyInfo.py` chịu trách nhiệm tạo các chunk trả lời câu hỏi tổng quan về công ty và thông tin liên hệ.
+- `chunk_company_info()` đọc `companyInfo.json`, chuẩn hóa dữ liệu thành list, rồi duyệt từng bản ghi công ty.
+- File tách một bản ghi công ty thành nhiều nhóm chunk có độ ưu tiên khác nhau: `overview`, `description` và `contact_info`.
+- Phần mạng xã hội được chuyển từ dictionary sang text dạng `key: value` trước khi đưa vào chunk liên hệ.
+- Output là list chunk đã có metadata chung `type="company_info"` và metadata riêng theo từng `chunk_type`.
 
 ### `heroSlides.py`
 
@@ -114,6 +131,14 @@ Nội dung hiện tại:
 - Tạo metadata trực tiếp gồm `type`, `source`, `slide_index`, `title`, `subtitle`, `description`, `image_url`.
 - Trả về danh sách chunk hợp lệ.
 
+Vai trò và luồng hoạt động:
+
+- `heroSlides.py` chịu trách nhiệm chuyển nội dung hero slide thành chunk giới thiệu các thông điệp nổi bật của website/công ty.
+- `chunk_hero_slides()` đọc `heroSlides.json`, bỏ qua slide không phải dictionary hoặc thiếu `title`, `subtitle`, `description`.
+- Text chunk được ghép từ title, subtitle và description của từng slide.
+- File này tạo metadata trực tiếp, không gọi `make_metadata()`, nên metadata hiện không có `chunk_id` UUID như nhiều file chunking khác.
+- Output là list chunk hợp lệ cho các slide đủ dữ liệu.
+
 ### `interiorStyles.py`
 
 File này đã có mã nguồn.
@@ -131,6 +156,14 @@ Nội dung hiện tại:
 - Nếu có cả `name` và `imageUrl`, tạo text tiếng Việt.
 - Gọi `make_metadata(...)` để tạo metadata cuối cùng.
 - Trả về danh sách chunk hợp lệ.
+
+Vai trò và luồng hoạt động:
+
+- `interiorStyles.py` chịu trách nhiệm chuyển dữ liệu phong cách nội thất thành chunk dạng định nghĩa.
+- `chunk_interior_styles()` đọc `interiorStyles.json`, chuẩn hóa dữ liệu thành list, rồi lấy `id`, `slug`, `name` và `imageUrl`.
+- Hàm hiện chỉ tạo chunk khi có cả `name` và `imageUrl`.
+- Metadata được tạo qua `make_metadata(...)` với `chunk_type="definition"` và `priority=3`.
+- Output là list chunk về phong cách nội thất, trong đó text hiện mô tả tên phong cách và URL hình ảnh minh họa.
 
 ### `news.py`
 
@@ -153,6 +186,14 @@ Nội dung hiện tại:
 - Gọi `make_metadata(...)` để tạo metadata cho từng chunk.
 - Trả về danh sách chunk hợp lệ.
 
+Vai trò và luồng hoạt động:
+
+- `news.py` chịu trách nhiệm chuyển bài viết tin tức từ HTML/raw JSON thành các chunk text có thể embedding.
+- `html_to_text(html)` dùng `BeautifulSoup` để bỏ tag HTML và giữ lại text thuần.
+- `chunk_news()` đọc `news.json`, lấy title, slug, excerpt và content, chuyển content HTML sang text rồi gọi `split_paragraphs(...)`.
+- File tạo chunk `overview` từ title và excerpt nếu có, sau đó tạo các chunk `full_content` cho từng đoạn nội dung.
+- Output là list chunk tin tức; mỗi chunk nội dung có metadata từ `make_metadata(...)`, còn `part_index` hiện được đặt ở cấp chunk dictionary cho full content.
+
 ### `newCategories.py`
 
 File này đã có mã nguồn.
@@ -174,6 +215,14 @@ Nội dung hiện tại:
 
 Tên file hiện tại là `newCategories.py`, còn dữ liệu đầu vào là `newsCategories.json`.
 
+Vai trò và luồng hoạt động:
+
+- `newCategories.py` chịu trách nhiệm tạo chunk định nghĩa cho danh mục tin tức.
+- `chunk_news_categories()` đọc `newsCategories.json`, chuẩn hóa dữ liệu thành list, bỏ qua category không phải dictionary hoặc thiếu `name`.
+- Text chunk mô tả tên danh mục và mục đích phân loại bài viết theo danh mục đó.
+- Metadata được tạo qua `make_metadata(...)` với `type="news_category"`, `chunk_type="definition"` và `priority=3`.
+- Output là list chunk danh mục tin tức. Tên file hiện là `newCategories.py`, khác một chữ so với tên dữ liệu `newsCategories.json`.
+
 ### `projectCategories.py`
 
 File này đã có mã nguồn.
@@ -192,6 +241,14 @@ Nội dung hiện tại:
 - Tạo text mô tả danh mục dự án.
 - Gọi `make_metadata(...)` để tạo metadata cuối cùng.
 - Trả về danh sách chunk hợp lệ.
+
+Vai trò và luồng hoạt động:
+
+- `projectCategories.py` chịu trách nhiệm tạo chunk định nghĩa cho danh mục dự án.
+- `chunk_project_categories()` đọc `projectCategories.json`, chuẩn hóa dữ liệu thành list, bỏ qua category không phải dictionary hoặc thiếu `name`.
+- Text chunk mô tả tên danh mục và vai trò phân loại các dự án liên quan.
+- Metadata được tạo qua `make_metadata(...)` với `type="project_category"`, `chunk_type="definition"` và `priority=3`.
+- Output là list chunk danh mục dự án.
 
 ### `projects.py`
 
@@ -215,6 +272,14 @@ Nội dung hiện tại:
 - Tạo chunk media từ ảnh minh họa.
 - Gọi `make_metadata(...)` để tạo metadata cho từng chunk.
 - Trả về danh sách chunk hợp lệ.
+
+Vai trò và luồng hoạt động:
+
+- `projects.py` chịu trách nhiệm chuyển mỗi dự án thành nhiều chunk nhỏ theo các góc truy vấn khác nhau.
+- `chunk_projects()` đọc `projects.json`, chuẩn hóa dữ liệu thành list, rồi lấy các field chính như tên dự án, slug, mô tả, chủ đầu tư, địa điểm, diện tích, ngày hoàn thành, danh mục, phong cách nội thất và ảnh đại diện.
+- File tạo chunk `overview` cho tên dự án, chunk `description` từ từng đoạn mô tả sau `split_paragraphs(...)`, chunk `style` cho danh mục/phong cách, chunk `context` cho địa điểm/chủ đầu tư, chunk `specs` cho diện tích/thời gian và chunk `media` cho ảnh minh họa.
+- Metadata được tạo qua `make_metadata(...)`, giúp mỗi chunk có `chunk_id`, `chunk_type`, `priority` và các field bổ sung phù hợp.
+- Output là list chunk dự án, thường nhiều chunk trên một project để retrieval có thể bắt được nhiều kiểu câu hỏi.
 
 ## Cách Hoạt Động Hiện Tại
 

@@ -4,6 +4,7 @@
 
 - 2026-07-24 21:39 +07 - Bổ sung mô tả nhiệm vụ file mã nguồn ở thư mục gốc.
 - 2026-07-25 17:34 +07 - Bổ sung trạng thái CodeGraph, `.gitignore` và các file tài liệu/cấu hình ở thư mục gốc.
+- 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò file mã nguồn; `chat.py` hiện vẫn rỗng và chưa có luồng xử lý.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -48,3 +49,5 @@ File này là lockfile dependency do `uv` quản lý.
 File này hiện đang rỗng.
 
 Tính tới thời điểm cập nhật này, file chưa có nhiệm vụ xử lý cụ thể trong mã nguồn.
+
+Vì file chưa có code, README không gán vai trò xử lý hoặc mô tả luồng chat chưa tồn tại.

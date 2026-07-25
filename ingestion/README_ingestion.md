@@ -8,6 +8,7 @@
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-25 17:23 +07 - Cập nhật trạng thái `pipeline.py`, danh sách file chunking và thư mục helper theo mã nguồn hiện tại.
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau buổi 4: `vectorstore` đã có code nhưng pipeline vẫn chưa chạy được end-to-end.
+- 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn trong thư mục `ingestion`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -52,6 +53,15 @@ Hàm `load_data()` hiện đang làm các việc sau:
 - Dùng `indent=4` để file JSON dễ đọc hơn.
 - Log thông tin sau khi ghi xong từng bảng.
 
+Vai trò và luồng hoạt động:
+
+- `load_data.py` chịu trách nhiệm biến file export gốc thành các file JSON đã tách theo bảng để các bước chunking đọc được dễ hơn.
+- File thêm `PROJECT_ROOT` vào `sys.path` khi chạy trực tiếp, giúp import được `core.settings_loader` từ project root.
+- `load_data()` đọc file gốc trong `settings["data"]["raw_dir"]`, lấy object `tables`, bỏ qua bảng rỗng và ghi từng bảng có dữ liệu sang `settings["data"]["processed_dir"]`.
+- Input chính là `data/raw/database_export_2026-01-14T02-32-14.json`.
+- Output chính là các file JSON trong `data/processed`, ví dụ `companyInfo.json`, `projects.json`, `news.json`.
+- File này là bước chuẩn bị dữ liệu trước khi các module trong `ingestion/chunking` tạo chunk.
+
 ### `pipeline.py`
 
 File này đã có mã nguồn.
@@ -70,8 +80,17 @@ Hàm `run_ingestion_pipeline()` hiện tạo list `all_chunks`, gọi các hàm 
 
 Trạng thái hiện tại của file này chưa chạy được nguyên vẹn vì:
 
-- File đang import `ingestion.chunking.InteriorStyles`, nhưng file thật trong thư mục là `ingestion/chunking/interiorStyles.py`.
+- File đang import `ingestion.chunking.interiorStylesnteriorStyles`, nhưng file thật trong thư mục là `ingestion/chunking/interiorStyles.py`.
 - File đang import `upsert_chunks` từ `vectorstore.upsert`. `vectorstore/upsert.py` hiện đã có code, nhưng import `vectorstore.*` đang bị ảnh hưởng bởi dependency package tên `vectorstore` trong môi trường `.venv`, và `upsert.py` còn tham chiếu các module local chưa tồn tại là `vectorstore.hybrid_index` và `embedding.sparse_embedder`.
+
+Vai trò và luồng hoạt động:
+
+- `pipeline.py` chịu trách nhiệm điều phối luồng ingestion từ các hàm chunking sang bước upsert vào vector store.
+- `setup_logging()` được gọi ở cấp module để kích hoạt cấu hình logging trước khi pipeline chạy.
+- `run_ingestion_pipeline()` tạo `all_chunks`, gọi lần lượt các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, rồi gom toàn bộ chunk vào một list.
+- Nếu `all_chunks` rỗng, pipeline log warning và dừng.
+- Nếu có chunk, pipeline gọi `upsert_chunks(all_chunks)` để chuyển dữ liệu sang vector store.
+- Trạng thái chạy hiện tại: file mô tả đúng ý định orchestration, nhưng chưa import/chạy được end-to-end vì lỗi import `interiorStylesnteriorStyles` và các vấn đề trong module `vectorstore`.
 
 ## Thư Mục Con Hiện Có
 
@@ -114,7 +133,7 @@ Luồng ingestion đã có ở mức mã nguồn:
 4. `load_data.py` ghi từng bảng có dữ liệu sang `data/processed`.
 5. Các file trong `ingestion/chunking` đọc dữ liệu từ `data/processed` và trả về list chunk.
 6. `pipeline.py` gom chunk từ nhiều hàm chunking.
-7. `pipeline.py` gọi `upsert_chunks`, nhưng luồng pipeline chưa chạy được nguyên vẹn trong trạng thái hiện tại vì lỗi import `InteriorStyles` và các vấn đề import/module trong phần `vectorstore`.
+7. `pipeline.py` gọi `upsert_chunks`, nhưng luồng pipeline chưa chạy được nguyên vẹn trong trạng thái hiện tại vì lỗi import `interiorStylesnteriorStyles` và các vấn đề import/module trong phần `vectorstore`.
 
 ## Ghi Chú Kỹ Thuật
 
