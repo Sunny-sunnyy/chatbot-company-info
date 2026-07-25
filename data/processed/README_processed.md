@@ -5,6 +5,7 @@
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra dữ liệu hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-25 17:23 +07 - Cập nhật ghi chú về các file chunking tương ứng với dữ liệu processed hiện tại.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -219,4 +220,13 @@ JSON được ghi với:
 
 Đây là thư mục chứa dữ liệu sinh ra sau bước xử lý, không chứa mã nguồn Python.
 
-Tính tới thời điểm hiện tại, chỉ `architectureTypes.json` đã có file chunking tương ứng trong mã nguồn.
+Tính tới thời điểm hiện tại, các file processed sau đã có file chunking tương ứng trong mã nguồn:
+
+- `architectureTypes.json`
+- `companyInfo.json`
+- `heroSlides.json`
+- `interiorStyles.json`
+- `newsCategories.json`
+- `news.json`
+- `projectCategories.json`
+- `projects.json`

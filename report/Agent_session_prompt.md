@@ -5,6 +5,7 @@
 - 2026-07-24 20:31 +07 - Tạo prompt đầu tiên để copy sang coding agent trong session mới.
 - 2026-07-24 21:24 +07 - Bổ sung quy tắc README phải mô tả nhiệm vụ của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Làm rõ README phải có phần riêng mô tả nhiệm vụ các file mã nguồn.
+- 2026-07-25 17:37 +07 - Bổ sung hướng dẫn sử dụng CodeGraph, kiểm tra đồng bộ index và ví dụ truy vấn cho coding agent.
 
 ## Nội Dung Prompt Để Copy Sang Session Mới
 
@@ -43,6 +44,75 @@ Hãy đọc theo thứ tự này trước khi kết luận hoặc chỉnh sửa:
 6. Nếu cần đối chiếu trạng thái sau nhiều buổi, đọc các transcript từ buổi đã được yêu cầu, không tự đọc trước các buổi chưa học hoặc chưa được yêu cầu.
 7. Đọc code thật trong các folder liên quan để xác minh README có đúng không.
 8. Nếu task là audit toàn dự án, đọc toàn bộ README theo folder và các file code tương ứng.
+
+## Quy Tắc Sử Dụng CodeGraph
+
+CodeGraph là công cụ hỗ trợ coding agent hiểu code nhanh hơn bằng graph cục bộ của project. CodeGraph không thay thế `report/Project_status.md`, README theo folder hoặc transcript bài học. Các tài liệu markdown vẫn là nguồn ngữ cảnh học tập; code thật trong repo vẫn là nguồn sự thật về trạng thái triển khai.
+
+Trước khi dùng CodeGraph trong session mới, hãy kiểm tra trạng thái đồng bộ:
+
+```bash
+codegraph version
+codegraph status .
+```
+
+Trạng thái tốt cần có:
+
+- Project đã được initialized, không báo `Not initialized`.
+- `codegraph status .` báo `Index is up to date`.
+- Backend dùng SQLite bình thường, ví dụ `node:sqlite` và journal `wal`.
+
+Nếu `codegraph status .` báo chưa initialized, không tự chạy `codegraph init` trừ khi người dùng yêu cầu hoặc đã thống nhất. Khi chưa có index, dùng `rg`, `find`, `sed`, `wc` và đọc file trực tiếp theo quy trình bình thường.
+
+Nếu index không đồng bộ hoặc nghi ngờ stale, có thể chạy:
+
+```bash
+codegraph sync
+codegraph status .
+```
+
+Nếu người dùng yêu cầu init hoặc đã thống nhất dùng CodeGraph cho project, chạy:
+
+```bash
+codegraph init
+codegraph status .
+```
+
+Thư mục `.codegraph/` là index SQLite local, đã được ignore trong `.gitignore` và không được commit.
+
+Theo tài liệu CodeGraph, sau `codegraph init`, auto-sync được bật mặc định. CodeGraph sẽ watch project và cập nhật graph khi file thay đổi. Không cần chạy thủ công sau mỗi lần sửa file. Chỉ chạy `codegraph sync` khi muốn xác nhận lại hoặc khi nghi ngờ index lệch.
+
+Khi MCP CodeGraph khả dụng trong coding agent, ưu tiên dùng `codegraph_explore` trước khi đọc hàng loạt file cho các câu hỏi kiểu:
+
+- Một flow hoạt động như thế nào.
+- Hàm nào gọi hàm nào.
+- Sửa một symbol có thể ảnh hưởng tới file nào.
+- Cần hiểu nhanh một module có nhiều import/call liên quan.
+
+Ví dụ MCP query:
+
+```text
+projectPath: /home/hieu0606sunny/llm_rag
+query: run_ingestion_pipeline chunk_architecture_types chunk_company_info
+maxFiles: 6
+```
+
+Ví dụ CLI tương đương khi MCP chưa dùng được:
+
+```bash
+codegraph explore "run_ingestion_pipeline chunk_architecture_types chunk_company_info"
+codegraph explore "How does embedding batch_embed_texts call embed_texts?"
+codegraph explore "What depends on ingestion.helpers.make_metadata?"
+```
+
+Kết quả CodeGraph có thể chứa source code theo dòng, call path và blast radius. Hãy xem đó là ngữ cảnh đã đọc cho các file được trả về, nhưng vẫn phải kiểm tra lại bằng `sed` hoặc `rg` nếu:
+
+- MCP báo lỗi.
+- Kết quả có dấu hiệu stale.
+- Bạn sắp sửa file và cần line number chính xác cho patch.
+- Task yêu cầu audit README/data count chi tiết.
+
+Nếu MCP CodeGraph lỗi sau khi vừa upgrade CodeGraph, có thể session agent hiện tại vẫn giữ process CodeGraph cũ. Trong trường hợp đó, dùng CLI `codegraph explore` hoặc công cụ đọc file thông thường, rồi ghi rõ trong báo cáo rằng session mới/restart agent sẽ dùng binary mới.
 
 ## Quy Trình Khi Tôi Nói Vừa Hoàn Thành Một Buổi Học
 

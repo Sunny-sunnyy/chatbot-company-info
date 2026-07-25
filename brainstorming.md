@@ -26,9 +26,6 @@ Bạn hãy dùng `brainstorming` làm quy trình chính để cùng tôi thảo 
   - `receiving-code-review` - Responding to feedback
   - `verification-before-completion` - Final verification before completion
 
-Load các skills ở:
-- WSL/Linux: `/home/hieu0606sunny/.codex/skills/`
-
 Dừng lại trao đổi với tôi, tôi xác nhận mới tạo file
 
 Bạn có thể tự khám phá các file, folder chứa code khác để hiểu rõ thêm về bài học nếu thấy cần thiết hoặc nếu tôi cung cấp thiếu ngữ cảnh
