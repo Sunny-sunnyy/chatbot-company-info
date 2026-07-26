@@ -7,6 +7,7 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file mã nguồn trong thư mục.
+- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `schema.py` hiện tồn tại nhưng vẫn rỗng và chưa định nghĩa `RetrievedDocument`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -16,6 +17,8 @@ Tính tới thời điểm hiện tại, thư mục này có hai nhiệm vụ:
 
 - Đọc cấu hình từ YAML và biến môi trường.
 - Thiết lập logging cho toàn bộ ứng dụng.
+
+Thư mục cũng có file `schema.py`, nhưng file này hiện rỗng và chưa được phát triển.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -87,6 +90,18 @@ Vai trò và luồng hoạt động:
 - Input chính là file `config/logging.yaml`.
 - Output là trạng thái logging global đã được cấu hình; các module khác có thể gọi `logging.getLogger("<ten_logger>")` để ghi log theo cấu hình này.
 
+### `schema.py`
+
+File này hiện đang rỗng.
+
+Tính tới sau buổi 6, file chưa định nghĩa schema nào. `retrieval/retriever.py` hiện import `RetrievedDocument` từ file này, nên luồng retrieval chưa import/chạy được nguyên vẹn cho tới khi schema đó được triển khai.
+
+### `__init__.py`
+
+File này hiện đang rỗng.
+
+File đánh dấu `core` là Python package.
+
 ## Cách Hoạt Động Hiện Tại
 
 Các module khác import `load_settings()` để lấy cấu hình dạng dictionary.
@@ -99,4 +114,4 @@ Ví dụ hiện tại trong `ingestion/load_data.py`, logger được lấy bằ
 
 File `.env` được nạp nhưng tài liệu này không đọc hoặc ghi nội dung `.env`.
 
-Git status hiện cho thấy các file cũ `core/load_settings.py` và `core/setup_logging.py` đang ở trạng thái deleted, còn `core/settings_loader.py` và `core/logging_setup.py` là file hiện có trong thư mục.
+Git status hiện cho thấy `core/schema.py` là file mới chưa được Git track và đang rỗng.

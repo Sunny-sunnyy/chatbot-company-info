@@ -6,6 +6,7 @@
 - 2026-07-25 17:34 +07 - Bổ sung trạng thái CodeGraph, `.gitignore` và các file tài liệu/cấu hình ở thư mục gốc.
 - 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò file mã nguồn; `chat.py` hiện vẫn rỗng và chưa có luồng xử lý.
 - 2026-07-26 12:23 +07 - Bổ sung mô tả `docker-compose.yml`, `README_docker.md` và trạng thái Qdrant local sau buổi 5.
+- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `chat.py` vẫn rỗng, còn retrieval và LLM đã có code trong các folder riêng.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -49,7 +50,13 @@ Thư mục này được Docker tạo khi chạy Qdrant.
 
 ### `brainstorming.md`
 
-File này tồn tại ở thư mục gốc và đang có thay đổi trong Git status trước session cập nhật CodeGraph. Nội dung file không thuộc phần triển khai RAG chính được kiểm tra trong lần cập nhật này.
+File này tồn tại ở thư mục gốc. Nội dung file không thuộc phần triển khai RAG chính được kiểm tra trong lần cập nhật này.
+
+### `chat.py`
+
+File này hiện đang rỗng.
+
+Tính tới sau buổi 6, file chưa có nhiệm vụ xử lý cụ thể trong mã nguồn. Luồng chat entrypoint chưa được triển khai trong file này.
 
 ### `pyproject.toml`
 
@@ -65,6 +72,6 @@ File này là lockfile dependency do `uv` quản lý.
 
 File này hiện đang rỗng.
 
-Tính tới thời điểm cập nhật này, file chưa có nhiệm vụ xử lý cụ thể trong mã nguồn.
+Tính tới sau buổi 6, file chưa có nhiệm vụ xử lý cụ thể trong mã nguồn.
 
 Vì file chưa có code, README không gán vai trò xử lý hoặc mô tả luồng chat chưa tồn tại.

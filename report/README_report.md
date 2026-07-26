@@ -10,6 +10,7 @@
 - 2026-07-25 18:42 +07 - Cập nhật mô tả `Project_status.md` sau khi audit trạng thái dự án theo buổi 4.
 - 2026-07-25 20:22 +07 - Cập nhật mô tả `Project_status.md` và `Agent_session_prompt.md` sau khi bổ sung chuẩn giải thích vai trò file mã nguồn trong README.
 - 2026-07-26 12:23 +07 - Cập nhật mô tả `Project_status.md` sau buổi 5: Qdrant Docker và pipeline ingestion đã chạy thành công.
+- 2026-07-26 16:54 +07 - Cập nhật mô tả `Project_status.md` sau buổi 6: retrieval, prompt template và LLM generator đã có code bước đầu.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -32,6 +33,8 @@ Nội dung hiện có:
 - Trạng thái dữ liệu hiện tại.
 - Quyết định kỹ thuật hiện tại.
 - Trạng thái Docker Compose cho Qdrant local.
+- Trạng thái code retrieval, prompt template và LLM generator sau buổi 6.
+- Ghi chú `core/schema.py` và `chat.py` vẫn rỗng.
 - Chuẩn README hiện tại cho các folder có file Python thật.
 
 ### `README_report.md`

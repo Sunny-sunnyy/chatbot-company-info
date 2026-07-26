@@ -7,6 +7,7 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-25 18:42 +07 - Bổ sung mô tả phiên âm buổi 4 sau khi đối chiếu với mã nguồn hiện tại.
 - 2026-07-26 12:23 +07 - Bổ sung mô tả phiên âm buổi 5 sau khi Qdrant Docker và pipeline ingestion chạy thành công.
+- 2026-07-26 16:54 +07 - Bổ sung mô tả phiên âm buổi 6 sau khi đối chiếu với code retrieval, prompt và LLM generator hiện tại.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -77,7 +78,15 @@ Nội dung chính đã dùng để cập nhật tài liệu:
 
 ### `6.txt`
 
-File phiên âm buổi 6 hiện có trong thư mục.
+Phiên âm buổi 6.
+
+Nội dung chính đã dùng để cập nhật tài liệu:
+
+- Viết retriever để nhận query, embedding query và truy vấn Qdrant.
+- Chuẩn hóa kết quả truy vấn về schema `RetrievedDocument`.
+- Viết prompt template gồm system prompt, context, question và yêu cầu trả lời bằng tiếng Việt dựa trên context.
+- Viết generator nhận context/question, build prompt và gọi Ollama để sinh câu trả lời.
+- Ghi nhận trong repo hiện tại `core/schema.py` và `chat.py` vẫn rỗng, nên luồng retrieval/chat chưa chạy end-to-end.
 
 ### `7.txt`
 
@@ -103,7 +112,7 @@ Tính tới thời điểm cập nhật này, ảnh này được dùng làm tà
 
 ## Cách Hoạt Động Hiện Tại
 
-Tài liệu trạng thái hiện tại đã được cập nhật sau khi đọc buổi 5 theo yêu cầu, đồng thời đối chiếu với mã nguồn hiện có và kết quả chạy pipeline thực tế.
+Tài liệu trạng thái hiện tại đã được cập nhật sau khi đọc buổi 6 theo yêu cầu, đồng thời đối chiếu với mã nguồn hiện có.
 
 Khi cập nhật sau các buổi học tiếp theo, cần đọc phiên âm tương ứng và đối chiếu với mã nguồn thực tế.
 
