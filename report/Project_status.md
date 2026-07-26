@@ -11,15 +11,17 @@
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/4.txt`, kiểm tra code embedding/vectorstore và audit README theo folder.
 - 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò và luồng hoạt động của file mã nguồn trong README các folder có Python code.
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: Qdrant chạy bằng Docker Compose, pipeline ingestion upsert 450 chunks thành công và tài liệu Docker được bổ sung.
-- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: bổ sung mô tả code retrieval, prompt template và LLM generator; ghi rõ `core/schema.py` và `chat.py` vẫn rỗng.
+- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: bổ sung mô tả code retrieval, prompt template và LLM generator; tại thời điểm đó `core/schema.py` và `chat.py` vẫn rỗng.
+- 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: bổ sung `core/schema.py`, FastAPI backend trong `api`, frontend Next.js trong `frontend`, README cho các folder mới và kết quả kiểm tra build frontend.
+- 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi người dùng xoá `chat.py` ở thư mục gốc và kiểm tra lại file rỗng hiện tại.
 
 ## Mốc Học Hiện Tại
 
-Dự án hiện đã được kiểm tra sau khi hoàn thành buổi 6.
+Dự án hiện đã được kiểm tra sau khi hoàn thành buổi 7. Bảy buổi này thuộc giai đoạn 1 của dự án.
 
-Buổi 6 trình bày cách viết retriever để embedding query và truy vấn Qdrant, cách tạo prompt template từ context và question, và cách viết LLM generator dùng Ollama để sinh câu trả lời.
+Buổi 7 trình bày cách nối retrieval với generator thành luồng chat, tạo FastAPI backend và tạo frontend Next.js để gọi API chat.
 
-Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, prompt template và LLM generator. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. `core/schema.py` và `chat.py` hiện vẫn rỗng.
+Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, LLM generator, FastAPI backend và frontend Next.js. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `api/routes/chat.py`.
 
 ## Mục Tiêu Dự Án
 
@@ -35,13 +37,15 @@ Các thư mục chính hiện có:
 
 - `config`: chứa cấu hình YAML cho ứng dụng và logging.
 - `core`: chứa mã dùng chung để đọc settings và cấu hình logging.
+- `api`: chứa FastAPI backend, health check và chat route.
 - `data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
+- `frontend`: chứa frontend Next.js, React, TypeScript và Tailwind CSS cho giao diện chat.
 - `ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
 - `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu.
 - `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
 - `embedding`: chứa mã load model embedding và tạo embedding theo batch.
 - `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point và upsert chunk vào Qdrant.
-- `retrieval`: chứa code truy vấn Qdrant bằng embedding query, nhưng hiện phụ thuộc `core/schema.py` đang rỗng.
+- `retrieval`: chứa code truy vấn Qdrant bằng embedding query và chuẩn hóa kết quả về `RetrievedDocument`.
 - `llm`: chứa prompt template và generator tạo câu trả lời bằng Ollama khi `llm.provider` là `ollama`.
 - `logs`: chứa file log của ứng dụng.
 - `report`: chứa tài liệu báo cáo trạng thái dự án.
@@ -53,6 +57,14 @@ Các thư mục chính hiện có:
 `core/settings_loader.py` đã có hàm `load_settings()`. Hàm này đọc `config/settings.yaml`, nạp biến môi trường từ `.env`, sau đó ghi đè một số giá trị cấu hình bằng biến môi trường nếu các biến đó tồn tại.
 
 `core/logging_setup.py` đã có hàm `setup_logging()`. Hàm này tạo thư mục `logs` nếu cần, đọc `config/logging.yaml` và áp dụng cấu hình logging bằng `logging.config.dictConfig`.
+
+`core/schema.py` đã có dataclass `RetrievedDocument`. Schema này gồm `id`, `score`, `text` và `metadata`, đang được `retrieval/retriever.py` dùng để chuẩn hóa kết quả truy vấn từ Qdrant.
+
+`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health` và `POST /api/chat`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`.
+
+`api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model và trả cấu hình LLM provider/model. Health check này có thể load embedding model khi được gọi.
+
+`api/routes/chat.py` đã có endpoint `POST /chat`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat`. Route nhận `query` và `session_id`, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `generate_answer(context, question)`, lưu session trong memory và trả `answer`, `sources`, `session_id`.
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
@@ -81,18 +93,32 @@ Các thư mục chính hiện có:
 
 `vectorstore/upsert.py` đã có hàm `upsert_chunks()`. File này lấy Qdrant client, đảm bảo collection tồn tại, gọi `build_qdrant_points(chunks)` để tạo dense-only point và gọi `client.upsert(...)`.
 
-`retrieval/retriever.py` đã có hàm `retrieve(query)`. File này embedding câu hỏi bằng `embed_texts([query])`, truy vấn Qdrant bằng `client.query_points(...)`, lấy payload gồm `text` và metadata, rồi chuẩn hóa kết quả về `RetrievedDocument`. Trạng thái hiện tại: file chưa import/chạy được nguyên vẹn vì `core/schema.py` vẫn rỗng và chưa định nghĩa `RetrievedDocument`.
+`retrieval/retriever.py` đã có hàm `retrieve(query)`. File này embedding câu hỏi bằng `embed_texts([query])`, truy vấn Qdrant bằng `client.query_points(...)`, lấy payload gồm `text` và metadata, rồi chuẩn hóa kết quả về `RetrievedDocument`. Sau buổi 7, module này đã import được vì `core/schema.py` đã có `RetrievedDocument`.
 
 `llm/prompt.py` đã có `SYSTEM_PROMPT` và hàm `build_prompt(context, question)`. File này tạo prompt tiếng Việt cho chatbot NMK Architects, yêu cầu trả lời dựa trên context và không tự bịa thông tin ngoài dữ liệu.
 
 `llm/generator.py` đã có hàm `generate_answer(context, question)`. File này kiểm tra context/question rỗng, gọi `build_prompt(...)`, rồi nếu `llm.provider` là `ollama` thì gọi `ollama.Client(...).chat(...)` để sinh câu trả lời. Trạng thái hiện tại: `config/settings.yaml` đang để `llm.provider` là `openrouter`, trong khi code generator hiện chỉ hỗ trợ nhánh `ollama`; với cấu hình hiện tại, hàm sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ.
 
-## Phần Chưa Được Phát Triển
+`frontend/app/page.tsx` đã render `ChatInterface`. `frontend/app/layout.tsx` đã khai báo layout gốc và metadata. `frontend/app/globals.css` đã cấu hình Tailwind và CSS variables nền/chữ.
+
+`frontend/components/ChatInterface.tsx` đã có UI chat client-side. Component lưu messages, input, loading state và session id; gửi câu hỏi bằng `chatService.sendMessage(...)`; hiển thị câu trả lời, lỗi cơ bản và tối đa 3 hình ảnh từ metadata source nếu có.
+
+`frontend/lib/api.ts` đã có Axios client. File này gọi `POST /api/chat` và có hàm `healthCheck()` gọi `GET /health`. `healthCheck()` hiện được định nghĩa nhưng chưa được gọi trong UI.
+
+## File Rỗng Hiện Tại
 
 Các file sau hiện tồn tại nhưng đang rỗng:
 
-- `chat.py`
-- `core/schema.py`
+- `api/__init__.py`
+- `core/__init__.py`
+- `embedding/__init__.py`
+- `ingestion/__init__.py`
+- `ingestion/chunking/__init__.py`
+- `llm/__init__.py`
+- `retrieval/__init__.py`
+- `vectorstore/__init__.py`
+
+Các file `__init__.py` rỗng hiện chỉ đóng vai trò package marker.
 
 ## Trạng Thái Chạy Hiện Tại
 
@@ -112,6 +138,25 @@ Kết quả chạy thực tế đã ghi nhận:
 - `run_ingestion_pipeline()` log đã upsert 450 chunks vào vector store.
 
 Trong quá trình chạy có nhiều warning `Empty text provided to split_paragraphs`, phản ánh một số bản ghi thiếu nội dung text để chia đoạn. Các warning này không chặn pipeline; luồng ingestion vẫn hoàn tất.
+
+Sau khi thêm code buổi 7, kiểm tra tĩnh hiện tại đã chạy thành công:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile api/app.py api/health.py api/routes/chat.py retrieval/retriever.py llm/generator.py core/schema.py
+UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('api.app'); print('api.app import ok')"
+```
+
+Kết quả: các file Python liên quan compile được và `api.app` import được.
+
+Frontend hiện có `node_modules/` local tại thời điểm kiểm tra này. Thư mục này được `frontend/.gitignore` ignore.
+
+Kiểm tra frontend hiện tại đã chạy thành công:
+
+```bash
+npm run build
+```
+
+Kết quả: Next.js production build compile thành công, type check thành công và route `/` được prerender thành static content. Development server chưa được khởi động trong phiên kiểm tra này.
 
 ## Trạng Thái Dữ Liệu Hiện Tại
 
@@ -151,7 +196,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 34 file, 224 nodes, 357 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 46 file, 302 nodes, 461 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -175,6 +220,22 @@ Nhà cung cấp LLM trong settings đang là `openrouter`, tên model đang là 
 
 Code LLM hiện tại nằm trong `llm/generator.py`, không còn file `llm/llm.py` trong cây thư mục hiện tại. Generator hiện chỉ có nhánh gọi Ollama khi `llm.provider == "ollama"`, nên chưa khớp hoàn toàn với cấu hình `openrouter` trong `config/settings.yaml`.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval và LLM đã có mã bước đầu theo buổi 6, nhưng retrieval chưa chạy được nguyên vẹn vì thiếu schema `RetrievedDocument`. Entrypoint `chat.py` chưa có mã triển khai.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval, schema, API backend và frontend đã có mã bước đầu sau buổi 7. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+
+Backend chạy bằng:
+
+```bash
+uv run python -m api.app
+```
+
+Frontend chạy trong terminal riêng bằng:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+`llm/generator.py` chưa được sửa trong lần cập nhật sau buổi 7 này. Với cấu hình OpenRouter hiện tại, luồng chat API có thể đi tới bước generator nhưng sẽ nhận thông báo provider không được hỗ trợ cho tới khi generator được cập nhật ở bước riêng.
 
 README ở các folder có file Python thật hiện đã được bổ sung phần giải thích vai trò file mã nguồn, hàm hoặc luồng chính, input/output khi rõ ràng và trạng thái chạy hiện tại nếu luồng chưa hoàn chỉnh. Các file rỗng vẫn được ghi rõ là chưa phát triển.

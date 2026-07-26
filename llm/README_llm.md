@@ -7,12 +7,14 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả trạng thái và nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `llm.py` đã được đổi tên thành `generator.py`; `generator.py` và `prompt.py` đã có code.
+- 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `api/routes/chat.py` đã gọi `generate_answer`, nhưng `generator.py` vẫn chưa hỗ trợ provider `openrouter`.
+- 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi `chat.py` ở thư mục gốc được xoá.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `llm` chứa mã tạo prompt và gọi mô hình ngôn ngữ để sinh câu trả lời từ context đã truy xuất.
 
-Tính tới sau buổi 6, thư mục này có prompt template và generator gọi Ollama. File `llm.py` không còn trong cây thư mục hiện tại; mã generator nằm ở `generator.py`.
+Tính tới sau buổi 7, thư mục này có prompt template và generator gọi Ollama. File `llm.py` không còn trong cây thư mục hiện tại; mã generator nằm ở `generator.py`.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -73,7 +75,7 @@ Vai trò và luồng hoạt động:
 - `generator.py` chịu trách nhiệm gọi LLM để sinh câu trả lời dựa trên prompt đã build.
 - Input chính là `context: str` và `question: str`.
 - Output là câu trả lời dạng `str`.
-- Trạng thái chạy hiện tại: code chỉ hỗ trợ nhánh `ollama`, trong khi `config/settings.yaml` hiện đang cấu hình `llm.provider` là `openrouter`. Với cấu hình hiện tại, hàm sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ thay vì gọi LLM.
+- Trạng thái chạy hiện tại: code chỉ hỗ trợ nhánh `ollama`, trong khi `config/settings.yaml` hiện đang cấu hình `llm.provider` là `openrouter`. Với cấu hình hiện tại, hàm sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ thay vì gọi LLM. File này chưa được sửa trong lần cập nhật sau buổi 7.
 
 ### `__init__.py`
 
@@ -91,7 +93,9 @@ Luồng LLM theo code hiện tại:
 4. Nếu provider là `ollama`, gọi Ollama local để sinh câu trả lời.
 5. Trả về câu trả lời hoặc thông báo lỗi tiếng Việt.
 
-Luồng này chưa được nối với `chat.py`, vì `chat.py` hiện vẫn rỗng.
+Luồng này hiện đã được `api/routes/chat.py` gọi trong endpoint `POST /api/chat`.
+
+`chat.py` ở thư mục gốc đã được xoá. Backend hiện chạy qua `api/app.py`.
 
 ## Ghi Chú Kỹ Thuật
 

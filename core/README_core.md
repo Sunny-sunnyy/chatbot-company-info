@@ -7,7 +7,8 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file mã nguồn trong thư mục.
-- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `schema.py` hiện tồn tại nhưng vẫn rỗng và chưa định nghĩa `RetrievedDocument`.
+- 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: tại thời điểm đó `schema.py` tồn tại nhưng vẫn rỗng và chưa định nghĩa `RetrievedDocument`.
+- 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `schema.py` đã định nghĩa dataclass `RetrievedDocument`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -17,8 +18,7 @@ Tính tới thời điểm hiện tại, thư mục này có hai nhiệm vụ:
 
 - Đọc cấu hình từ YAML và biến môi trường.
 - Thiết lập logging cho toàn bộ ứng dụng.
-
-Thư mục cũng có file `schema.py`, nhưng file này hiện rỗng và chưa được phát triển.
+- Định nghĩa schema dùng chung cho dữ liệu retrieval.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -92,9 +92,28 @@ Vai trò và luồng hoạt động:
 
 ### `schema.py`
 
-File này hiện đang rỗng.
+File này đã có mã nguồn.
 
-Tính tới sau buổi 6, file chưa định nghĩa schema nào. `retrieval/retriever.py` hiện import `RetrievedDocument` từ file này, nên luồng retrieval chưa import/chạy được nguyên vẹn cho tới khi schema đó được triển khai.
+Nội dung chính:
+
+- Import `dataclass` từ `dataclasses`.
+- Import `Any` từ `typing`.
+- Định nghĩa dataclass `RetrievedDocument`.
+
+`RetrievedDocument` có các field:
+
+- `id: str`
+- `score: float`
+- `text: str`
+- `metadata: dict[str, Any]`
+
+Vai trò và luồng hoạt động:
+
+- `schema.py` chứa cấu trúc dữ liệu dùng chung để biểu diễn tài liệu được truy xuất từ Qdrant.
+- `retrieval/retriever.py` tạo `RetrievedDocument` từ từng point trả về bởi Qdrant.
+- `api/routes/chat.py` dùng các object document này để build context cho LLM và trả sources về frontend.
+- Input thực tế đến từ payload Qdrant gồm `text` và metadata.
+- Output là object `RetrievedDocument` có thể truy cập bằng thuộc tính như `doc.text`, `doc.metadata` và `doc.score`.
 
 ### `__init__.py`
 
@@ -113,5 +132,3 @@ Ví dụ hiện tại trong `ingestion/load_data.py`, logger được lấy bằ
 ## Ghi Chú Kỹ Thuật
 
 File `.env` được nạp nhưng tài liệu này không đọc hoặc ghi nội dung `.env`.
-
-Git status hiện cho thấy `core/schema.py` là file mới chưa được Git track và đang rỗng.

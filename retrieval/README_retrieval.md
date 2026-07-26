@@ -7,12 +7,13 @@
 - 2026-07-24 21:24 +07 - Bổ sung mô tả trạng thái và nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `retriever.py` đã có code truy vấn Qdrant nhưng chưa chạy được nguyên vẹn vì `core/schema.py` vẫn rỗng.
+- 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `core/schema.py` đã có `RetrievedDocument`, nên module retrieval import được.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `retrieval` chứa mã truy xuất tài liệu liên quan từ vector store.
 
-Tính tới sau buổi 6, thư mục này đã có code embedding query, truy vấn collection Qdrant và chuẩn hóa kết quả truy vấn thành document. Luồng hiện tại chưa import/chạy được nguyên vẹn vì schema `RetrievedDocument` được import từ `core/schema.py` nhưng file đó vẫn rỗng.
+Tính tới sau buổi 7, thư mục này đã có code embedding query, truy vấn collection Qdrant và chuẩn hóa kết quả truy vấn thành document. `core/schema.py` đã định nghĩa `RetrievedDocument`, nên module retrieval hiện import được.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -56,7 +57,7 @@ Vai trò và luồng hoạt động:
 - `retriever.py` chịu trách nhiệm lấy câu hỏi người dùng, embedding câu hỏi, tìm các point liên quan trong Qdrant và trả về danh sách tài liệu có thể dùng làm context cho LLM.
 - Input chính là `query: str`.
 - Output dự kiến là `list[RetrievedDocument]`, mỗi document gồm `id`, `score`, `text` và `metadata`.
-- Trạng thái chạy hiện tại: chưa import/chạy được nguyên vẹn vì `core/schema.py` hiện rỗng và chưa định nghĩa `RetrievedDocument`.
+- Trạng thái chạy hiện tại: module import được sau khi `core/schema.py` có `RetrievedDocument`. Luồng truy vấn thật vẫn cần Qdrant đang chạy, collection đã có dữ liệu và embedding model load được.
 
 ### `__init__.py`
 
@@ -74,7 +75,7 @@ Luồng retrieval theo code hiện tại:
 4. Lấy payload gồm `text` và metadata từ các point đạt ngưỡng score.
 5. Chuẩn hóa kết quả về schema `RetrievedDocument`.
 
-Luồng này đang dừng ở bước import schema vì `core/schema.py` chưa được phát triển.
+Luồng này hiện không còn dừng ở bước import schema. Khi chạy thật, kết quả phụ thuộc trạng thái Qdrant local và collection `nmk_chatbot_collection`.
 
 ## Ghi Chú Kỹ Thuật
 

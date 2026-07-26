@@ -8,6 +8,7 @@
 - 2026-07-25 18:42 +07 - Bổ sung mô tả phiên âm buổi 4 sau khi đối chiếu với mã nguồn hiện tại.
 - 2026-07-26 12:23 +07 - Bổ sung mô tả phiên âm buổi 5 sau khi Qdrant Docker và pipeline ingestion chạy thành công.
 - 2026-07-26 16:54 +07 - Bổ sung mô tả phiên âm buổi 6 sau khi đối chiếu với code retrieval, prompt và LLM generator hiện tại.
+- 2026-07-26 21:02 +07 - Bổ sung mô tả phiên âm buổi 7 sau khi đối chiếu với code schema, API backend và frontend hiện tại.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -86,11 +87,20 @@ Nội dung chính đã dùng để cập nhật tài liệu:
 - Chuẩn hóa kết quả truy vấn về schema `RetrievedDocument`.
 - Viết prompt template gồm system prompt, context, question và yêu cầu trả lời bằng tiếng Việt dựa trên context.
 - Viết generator nhận context/question, build prompt và gọi Ollama để sinh câu trả lời.
-- Ghi nhận trong repo hiện tại `core/schema.py` và `chat.py` vẫn rỗng, nên luồng retrieval/chat chưa chạy end-to-end.
+- Ghi nhận tại thời điểm cập nhật sau buổi 6 rằng `core/schema.py` và `chat.py` vẫn rỗng, nên luồng retrieval/chat chưa chạy end-to-end ở thời điểm đó.
 
 ### `7.txt`
 
-File phiên âm buổi 7 hiện có trong thư mục.
+Phiên âm buổi 7.
+
+Nội dung chính đã dùng để cập nhật tài liệu:
+
+- Nối retrieval và generator thành luồng chat nhận question, truy xuất document, build context và sinh answer.
+- Tạo schema `RetrievedDocument` để chuẩn hóa document truy xuất.
+- Tạo FastAPI backend gồm app chính, health endpoint và chat endpoint.
+- Tạo frontend Next.js để gửi câu hỏi tới backend và hiển thị câu trả lời.
+- Ghi nhận bảy buổi đầu là giai đoạn 1 của dự án.
+- Ghi nhận trong repo hiện tại `llm/generator.py` vẫn chưa được sửa cho provider `openrouter`.
 
 ### `anh1.png`
 
@@ -112,7 +122,7 @@ Tính tới thời điểm cập nhật này, ảnh này được dùng làm tà
 
 ## Cách Hoạt Động Hiện Tại
 
-Tài liệu trạng thái hiện tại đã được cập nhật sau khi đọc buổi 6 theo yêu cầu, đồng thời đối chiếu với mã nguồn hiện có.
+Tài liệu trạng thái hiện tại đã được cập nhật sau khi đọc buổi 7 theo yêu cầu, đồng thời đối chiếu với mã nguồn hiện có.
 
 Khi cập nhật sau các buổi học tiếp theo, cần đọc phiên âm tương ứng và đối chiếu với mã nguồn thực tế.
 
