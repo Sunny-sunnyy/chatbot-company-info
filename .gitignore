@@ -21,6 +21,7 @@ htmlcov/
 data/
 logs/
 tai_lieu/
+qdrant_storage/
 
 # OS/editor noise
 .DS_Store

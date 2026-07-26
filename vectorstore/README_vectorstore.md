@@ -8,18 +8,19 @@
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-25 18:42 +07 - Cập nhật theo mã nguồn hiện tại sau buổi 4: `qdrant.py`, `index.py` và `upsert.py` đã có code, nhưng luồng import/upsert hiện chưa chạy được nguyên vẹn.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn vector store.
+- 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: `qdrant.py` và `upsert.py` chuyển về dense-only, pipeline đã upsert 450 chunks vào Qdrant theo kết quả chạy thực tế của người dùng.
 
 ## Nhiệm Vụ Của Thư Mục
 
-Thư mục `vectorstore` chứa mã chuẩn bị kết nối Qdrant, tạo collection và chuyển chunk thành point để lưu vào vector store.
+Thư mục `vectorstore` chứa mã kết nối Qdrant, đảm bảo collection tồn tại, chuyển chunk thành Qdrant point và upsert point vào vector store.
 
-Tính tới thời điểm kiểm tra này, thư mục đã có code ở cả ba file Python, nhưng chưa xác nhận chạy được end-to-end vì còn lỗi import trong môi trường hiện tại.
+Tính tới thời điểm kiểm tra này, luồng vector store hiện đang dùng dense vector đơn thuần, chưa dùng hybrid search hoặc sparse vector.
 
 ## File Tài Liệu Trong Thư Mục
 
 ### `README_vectorstore.md`
 
-File này mô tả nhiệm vụ của thư mục `vectorstore`, trạng thái từng file mã nguồn và các điểm chưa chạy được theo mã nguồn hiện tại.
+File này mô tả nhiệm vụ của thư mục `vectorstore`, trạng thái từng file mã nguồn và trạng thái chạy hiện tại của luồng upsert vào Qdrant.
 
 ## Nhiệm Vụ Các File Mã Nguồn
 
@@ -30,7 +31,7 @@ File này đã có mã nguồn.
 Nội dung hiện tại:
 
 - Import `QdrantClient` từ `qdrant_client`.
-- Import `VectorParams`, `Distance`, `SparseVectorParams` và `SparseIndexParams`.
+- Import `Distance` và `VectorParams` từ `qdrant_client.models`.
 - Đọc cấu hình `vector_database` từ `core.settings_loader.load_settings()`.
 - Lấy `collection_name`, `vector_size`, `distance` và `timeout` từ settings.
 - Dùng biến module `_client` để cache Qdrant client.
@@ -39,16 +40,17 @@ Nội dung hiện tại:
 
 Hàm `get_qdrant_client()` hiện kết nối Qdrant bằng `url` nếu settings có `vector_database.url`, nếu không thì kết nối bằng `host` và `port`. Sau khi tạo client, hàm gọi `get_collections()` để kiểm tra kết nối.
 
-Hàm `ensure_collection(client)` hiện lấy danh sách collection hiện có. Nếu collection cấu hình đã tồn tại thì log và dừng. Nếu chưa tồn tại, hàm gọi `recreate_collection()` để tạo collection có vector dense tên `dense` và sparse vector tên `sparse`.
+Hàm `ensure_collection(client)` hiện lấy danh sách collection đang có trong Qdrant. Nếu collection cấu hình đã tồn tại thì log và dừng. Nếu chưa tồn tại, hàm gọi `recreate_collection()` để tạo collection dense-only bằng `VectorParams(size=VECTOR_SIZE, distance=Distance[DISTANCE.upper()])`.
 
 Vai trò và luồng hoạt động:
 
-- `qdrant.py` chịu trách nhiệm quản lý hạ tầng kết nối tới Qdrant và đảm bảo collection lưu trữ tồn tại.
+- `qdrant.py` chịu trách nhiệm quản lý kết nối tới Qdrant và đảm bảo collection lưu trữ tồn tại.
 - `get_qdrant_client()` dùng pattern singleton ở cấp module: nếu `_client` đã có thì trả về lại client cũ, tránh tạo kết nối mới ở mỗi lần gọi.
 - Khi chưa có `_client`, hàm đọc cấu hình Qdrant từ settings, ưu tiên kết nối bằng `url`; nếu không có `url` thì dùng `host` và `port`.
 - Sau khi tạo client, hàm gọi `_client.get_collections()` để kiểm tra kết nối thật với Qdrant.
-- `ensure_collection(client)` kiểm tra collection theo `COLLECTION_NAME`. Nếu đã tồn tại thì dừng; nếu chưa, hàm gọi `recreate_collection(...)`.
-- Collection được tạo theo hướng Hybrid Search: dense vector tên `dense` dùng `VECTOR_SIZE` và `DISTANCE`, sparse vector tên `sparse` dùng `SparseVectorParams`.
+- `ensure_collection(client)` kiểm tra collection theo `COLLECTION_NAME`. Nếu chưa có, hàm tạo collection dense-only, không tạo sparse vector.
+- Input chính là cấu hình `vector_database` trong `config/settings.yaml` và Qdrant service đang chạy.
+- Output chính là một `QdrantClient` đã kết nối và collection `nmk_chatbot_collection` đã sẵn sàng nếu Qdrant chạy được.
 
 ### `index.py`
 
@@ -69,13 +71,13 @@ Hàm `build_qdrant_points()` hiện kiểm tra input rỗng, lấy `text` từ t
 
 Vai trò và luồng hoạt động:
 
-- `index.py` chịu trách nhiệm chuyển danh sách chunk văn bản thành point dạng dense-only mà Qdrant có thể lưu.
+- `index.py` chịu trách nhiệm chuyển danh sách chunk văn bản thành point dense-only mà Qdrant có thể lưu.
 - `build_qdrant_points(chunks)` lấy toàn bộ `chunk["text"]`, gọi `embed_texts(texts)` để biến text thành dense embedding.
 - Vòng lặp `zip(chunks, embeddings)` ghép từng chunk với vector tương ứng, giữ đúng quan hệ một text một vector.
 - Mỗi point là dictionary gồm `id`, `vector` và `payload`.
-- `id` lấy từ `metadata["chunk_id"]` nếu có, nếu không thì tự sinh bằng `uuid.uuid4()`.
 - `payload` chứa nội dung gốc trong key `text` và bung toàn bộ metadata bằng `**chunk.get("metadata", {})`.
-- File này hiện chỉ build point dense đơn thuần; luồng hybrid trong `upsert.py` đang tham chiếu file khác chưa tồn tại.
+- Input chính là `list[dict]` chunk từ `ingestion/pipeline.py`.
+- Output chính là `list[dict]` point để truyền cho `client.upsert(...)`.
 
 ### `upsert.py`
 
@@ -83,35 +85,53 @@ File này đã có mã nguồn.
 
 Nội dung hiện tại:
 
-- Import `QdrantClient`.
+- Import `logging`.
+- Import `QdrantClient` từ `qdrant_client`.
 - Import `load_settings` từ `core.settings_loader`.
 - Import `get_qdrant_client` và `ensure_collection` từ `vectorstore.qdrant`.
-- Import `build_hybrid_qdrant_points` và `init_sparse_embedder` từ `vectorstore.hybrid_index`.
-- Import `SparseEmbedder` từ `embedding.sparse_embedder`.
+- Import `build_qdrant_points` từ `vectorstore.index`.
 - Định nghĩa hàm `upsert_chunks(chunks: list[dict])`.
 
-Hàm `upsert_chunks()` hiện kiểm tra chunks rỗng, lấy Qdrant client, đảm bảo collection tồn tại, fit sparse embedder bằng corpus text, build hybrid points và gọi `client.upsert(...)`.
+Hàm `upsert_chunks()` hiện kiểm tra chunks rỗng, lấy Qdrant client, đảm bảo collection tồn tại, build dense-only point từ chunks và gọi `client.upsert(...)` để ghi point vào collection cấu hình.
 
 Vai trò và luồng hoạt động:
 
 - `upsert.py` chịu trách nhiệm điều phối bước ghi chunk đã xử lý vào Qdrant.
-- `upsert_chunks(chunks)` lấy Qdrant client qua `get_qdrant_client()`, gọi `ensure_collection(client)`, rồi chuẩn bị sparse embedder bằng toàn bộ corpus text trong chunks.
-- Sau khi fit `SparseEmbedder`, hàm gọi `init_sparse_embedder(sparse_embedder)` để chia sẻ sparse embedder cho bước build hybrid point.
-- `build_hybrid_qdrant_points(chunks)` được kỳ vọng tạo point có cả dense vector và sparse vector, sau đó `client.upsert(...)` ghi các point vào collection cấu hình.
-- Trạng thái chạy hiện tại: file chưa import/chạy được nguyên vẹn vì `vectorstore.hybrid_index` và `embedding.sparse_embedder` chưa tồn tại trong repo, đồng thời tên thư mục local `vectorstore` đang xung đột với dependency package `vectorstore` trong môi trường.
+- `upsert_chunks(chunks)` lấy Qdrant client qua `get_qdrant_client()`, gọi `ensure_collection(client)`, rồi gọi `build_qdrant_points(chunks)`.
+- Nếu không build được point nào, hàm log warning và trả về list rỗng.
+- Nếu có point, hàm gọi `client.upsert(collection_name=COLLECTION_NAME, points=points)`.
+- Input chính là list chunk có key `text` và `metadata`.
+- Output trực tiếp của hàm không trả về dữ liệu khi upsert thành công; trạng thái được ghi qua log.
+- Trạng thái hiện tại không còn import `vectorstore.hybrid_index` hoặc `embedding.sparse_embedder`.
 
 ## Trạng Thái Chạy Hiện Tại
 
-Luồng `vectorstore` hiện chưa import được nguyên vẹn trong môi trường `uv run` hiện tại.
+Sau buổi 5, người dùng đã bật Qdrant bằng Docker Compose, chạy:
 
-Các vấn đề đã xác minh:
+```bash
+uv run python -m ingestion.pipeline
+```
 
-- `import vectorstore.qdrant` đang trỏ tới package `vectorstore` trong `.venv/site-packages`, không trỏ tới thư mục local `vectorstore` của repo. Nguyên nhân quan sát được là `pyproject.toml` đang có dependency tên `vectorstore`, trong khi thư mục local cũng tên `vectorstore`.
-- `vectorstore/upsert.py` đang import `vectorstore.hybrid_index`, nhưng file `vectorstore/hybrid_index.py` hiện không tồn tại trong repo.
-- `vectorstore/upsert.py` đang import `embedding.sparse_embedder`, nhưng file `embedding/sparse_embedder.py` hiện không tồn tại trong repo.
+Kết quả chạy thực tế đã ghi nhận:
 
-Vì các lỗi trên, chưa thể xác nhận `upsert_chunks()` chạy end-to-end với Qdrant trong trạng thái hiện tại.
+- Kết nối Qdrant qua URL thành công.
+- Collection `nmk_chatbot_collection` được tạo thành công.
+- Embedding model `intfloat/multilingual-e5-small` được load.
+- `build_qdrant_points()` build 450 Qdrant points.
+- `upsert_chunks()` upsert 450 points vào collection `nmk_chatbot_collection`.
+- `run_ingestion_pipeline()` log đã upsert 450 chunks vào vector store.
+
+Trong quá trình chunking có nhiều warning `Empty text provided to split_paragraphs`. Các warning này phản ánh một số bản ghi có nội dung rỗng hoặc thiếu text để chia đoạn, nhưng luồng ingestion vẫn hoàn tất và upsert thành công.
 
 ## Ghi Chú Kỹ Thuật
 
-Buổi 4 trong `tai_lieu/4.txt` trình bày các bước embedding, kết nối Qdrant, tạo collection, build point và upsert chunk vào vector store. Mã nguồn hiện tại đã phản ánh một phần nội dung đó ở `embedding` và `vectorstore`, nhưng trạng thái chạy end-to-end vẫn chưa hoàn chỉnh.
+Luồng hiện tại là dense-only. Collection được tạo bằng unnamed dense vector theo cấu trúc point từ `vectorstore/index.py`.
+
+Qdrant đang được cấu hình trong `config/settings.yaml` với:
+
+- `vector_database.url`: `http://localhost:6333`
+- `vector_database.collection_name`: `nmk_chatbot_collection`
+- `vector_database.distance`: `cosine`
+- `vector_database.vector_size`: `384`
+
+Qdrant service được chạy bằng Docker Compose ở thư mục gốc dự án. Dữ liệu Qdrant local hiện được mount vào `qdrant_storage/` theo cấu hình trong `docker-compose.yml`.

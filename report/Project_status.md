@@ -10,14 +10,15 @@
 - 2026-07-25 17:37 +07 - Bổ sung hướng dẫn sử dụng CodeGraph vào `report/Agent_session_prompt.md`.
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/4.txt`, kiểm tra code embedding/vectorstore và audit README theo folder.
 - 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò và luồng hoạt động của file mã nguồn trong README các folder có Python code.
+- 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: Qdrant chạy bằng Docker Compose, pipeline ingestion upsert 450 chunks thành công và tài liệu Docker được bổ sung.
 
 ## Mốc Học Hiện Tại
 
-Dự án hiện đã được kiểm tra sau khi hoàn thành buổi 4.
+Dự án hiện đã được kiểm tra sau khi hoàn thành buổi 5.
 
-Buổi 4 trình bày phần embedding, batch embedding, kết nối Qdrant, đảm bảo collection tồn tại, build point từ chunk và upsert point vào vector store.
+Buổi 5 trình bày cách bổ sung `__init__.py`, cài dependency cần thiết, cấu hình Docker Compose cho Qdrant, chạy Qdrant container, chạy pipeline ingestion để upsert dữ liệu vào vector store và kiểm tra dữ liệu trong Qdrant dashboard.
 
-Mã nguồn hiện tại đã có phần embedding và đã có code trong `vectorstore`, nhưng luồng ingestion-to-vector-store chưa chạy được end-to-end trong trạng thái hiện tại.
+Mã nguồn hiện tại đã có phần embedding và vector store dense-only. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant.
 
 ## Mục Tiêu Dự Án
 
@@ -38,12 +39,13 @@ Các thư mục chính hiện có:
 - `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu.
 - `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
 - `embedding`: chứa mã load model embedding và tạo embedding theo batch.
-- `vectorstore`: chứa code kết nối Qdrant, tạo collection, build point và upsert chunk, nhưng hiện còn lỗi import/module khi chạy.
+- `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point và upsert chunk vào Qdrant.
 - `retrieval`: hiện chỉ có file Python rỗng.
 - `llm`: hiện chỉ có các file Python rỗng.
 - `logs`: chứa file log của ứng dụng.
 - `report`: chứa tài liệu báo cáo trạng thái dự án.
 - `tai_lieu`: chứa phiên âm các buổi học.
+- `qdrant_storage`: chứa dữ liệu local do Qdrant Docker container tạo ra.
 
 ## Phần Đã Có Mã Nguồn
 
@@ -53,7 +55,7 @@ Các thư mục chính hiện có:
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
-`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Trạng thái hiện tại của file này chưa chạy được nguyên vẹn vì đang import `ingestion.chunking.interiorStylesnteriorStyles` trong khi file thật là `ingestion/chunking/interiorStyles.py`. Ngoài ra, phần `vectorstore` hiện có code nhưng còn lỗi import/module nên chưa xác nhận được luồng upsert end-to-end.
+`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Sau buổi 5, người dùng đã chạy thành công file này bằng `uv run python -m ingestion.pipeline`; log ghi nhận đã upsert 450 chunks vào vector store.
 
 `ingestion/chunking` hiện có các module chunking cho nhiều bảng dữ liệu đã xử lý:
 
@@ -72,11 +74,11 @@ Các thư mục chính hiện có:
 
 `embedding/batch_embed.py` đã có hàm `batch_embed_texts()`. File này đọc `embedding.batch_size` từ settings, chia danh sách text thành batch, gọi `embed_texts()` cho từng batch và gộp kết quả embedding.
 
-`vectorstore/qdrant.py` đã có hàm `get_qdrant_client()` và `ensure_collection()`. File này đọc cấu hình Qdrant từ settings, tạo `QdrantClient`, kiểm tra kết nối bằng `get_collections()`, và tạo collection có dense vector tên `dense` cùng sparse vector tên `sparse` nếu collection chưa tồn tại.
+`vectorstore/qdrant.py` đã có hàm `get_qdrant_client()` và `ensure_collection()`. File này đọc cấu hình Qdrant từ settings, tạo `QdrantClient`, kiểm tra kết nối bằng `get_collections()`, và tạo collection dense-only bằng `VectorParams` nếu collection chưa tồn tại.
 
 `vectorstore/index.py` đã có hàm `build_qdrant_points()`. File này lấy text từ các chunk, gọi `embedding.embedder.embed_texts()` để tạo embedding, rồi build point dictionary gồm `id`, `vector` và `payload`.
 
-`vectorstore/upsert.py` đã có hàm `upsert_chunks()`. File này lấy Qdrant client, đảm bảo collection tồn tại, fit sparse embedder, build hybrid point và gọi `client.upsert(...)`.
+`vectorstore/upsert.py` đã có hàm `upsert_chunks()`. File này lấy Qdrant client, đảm bảo collection tồn tại, gọi `build_qdrant_points(chunks)` để tạo dense-only point và gọi `client.upsert(...)`.
 
 ## Phần Chưa Được Phát Triển
 
@@ -89,16 +91,22 @@ Các file sau hiện tồn tại nhưng đang rỗng:
 
 ## Trạng Thái Chạy Hiện Tại
 
-`ingestion/pipeline.py` hiện chưa import được vì file đang import `ingestion.chunking.interiorStylesnteriorStyles`, trong khi file thật là `ingestion/chunking/interiorStyles.py`.
+Người dùng đã chạy Qdrant bằng Docker Compose và chạy thành công:
 
-Các module local trong thư mục `vectorstore` hiện chưa import được bằng `import vectorstore.qdrant` trong môi trường `uv run`, vì Python đang resolve `vectorstore` tới package dependency trong `.venv/site-packages/vectorstore`.
+```bash
+uv run python -m ingestion.pipeline
+```
 
-`vectorstore/upsert.py` hiện còn tham chiếu hai module chưa tồn tại trong repo:
+Kết quả chạy thực tế đã ghi nhận:
 
-- `vectorstore.hybrid_index`
-- `embedding.sparse_embedder`
+- Qdrant kết nối thành công qua `http://localhost:6333`.
+- Collection `nmk_chatbot_collection` được tạo thành công.
+- Embedding model `intfloat/multilingual-e5-small` được load.
+- `build_qdrant_points()` build 450 Qdrant points.
+- `upsert_chunks()` upsert 450 points vào collection `nmk_chatbot_collection`.
+- `run_ingestion_pipeline()` log đã upsert 450 chunks vào vector store.
 
-Vì các điểm trên, trạng thái code hiện tại chưa xác nhận được việc upsert chunk vào Qdrant chạy thành công end-to-end.
+Trong quá trình chạy có nhiều warning `Empty text provided to split_paragraphs`, phản ánh một số bản ghi thiếu nội dung text để chia đoạn. Các warning này không chặn pipeline; luồng ingestion vẫn hoàn tất.
 
 ## Trạng Thái Dữ Liệu Hiện Tại
 
@@ -130,13 +138,15 @@ Các file đã được tách trong `data/processed`:
 - `projectCategories.json`
 - `projects.json`
 
+Qdrant local hiện có dữ liệu được lưu trong `qdrant_storage/` do Docker Compose mount từ `./qdrant_storage` vào `/qdrant/storage` trong container. Collection `nmk_chatbot_collection` đã nhận 450 points theo log chạy pipeline sau buổi 5.
+
 ## Quyết Định Kỹ Thuật Hiện Tại
 
 Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần sync gần nhất, `codegraph status .` ghi nhận index hiện có 25 file, 170 nodes, 261 edges, backend `node:sqlite` với journal `wal`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 33 file, 191 nodes, 291 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -154,8 +164,10 @@ Embedding model đang được cấu hình là `intfloat/multilingual-e5-small`.
 
 Vector database đang được cấu hình là Qdrant, tên collection là `nmk_chatbot_collection`, distance là `cosine`, vector size là `384`.
 
+Qdrant đang được chạy bằng Docker Compose từ `docker-compose.yml`, service tên `qdrant`, container name `qdrant_version_1`, REST API port `6333`, gRPC port `6334`, dashboard tại `http://localhost:6333/dashboard`.
+
 Nhà cung cấp LLM trong settings đang là `openrouter`, tên model đang là `qwen/qwen3.5-9b`, temperature là `0.2`.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point để lưu vào Qdrant. Phần retrieval, LLM và entrypoint chat chưa có mã triển khai.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval, LLM và entrypoint chat chưa có mã triển khai.
 
 README ở các folder có file Python thật hiện đã được bổ sung phần giải thích vai trò file mã nguồn, hàm hoặc luồng chính, input/output khi rõ ràng và trạng thái chạy hiện tại nếu luồng chưa hoàn chỉnh. Các file rỗng vẫn được ghi rõ là chưa phát triển.

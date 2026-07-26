@@ -1,7 +1,6 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance, SparseVectorParams, SparseIndexParams
+from qdrant_client.models import Distance, VectorParams
 import logging 
-import os
 
 from core.settings_loader import load_settings
 
@@ -9,14 +8,14 @@ settings = load_settings()
 logger = logging.getLogger("vector_database")
 
 QDRANT_CONFIG = settings["vector_database"]
-COLLECTION_NAME = QDRANT_CONFIG["collection_name"] # khong dung .get vi day la bat buoc phai co
-VECTOR_SIZE = QDRANT_CONFIG["vector_size"] # khong dung .get vi day la bat buoc phai co
-DISTANCE = QDRANT_CONFIG.get("distance", "cosine") # mac dinh la cosine, co the la "dot" hoac "euclid"
-TIMEOUT = QDRANT_CONFIG.get("timeout", 30) # Default 30 seconds
+COLLECTION_NAME = QDRANT_CONFIG["collection_name"]
+VECTOR_SIZE = QDRANT_CONFIG["vector_size"]
+DISTANCE = QDRANT_CONFIG.get("distance", "cosine")
+TIMEOUT = QDRANT_CONFIG.get("timeout", 30)
 
 _client: QdrantClient | None = None
 
-def get_qdrant_client() -> QdrantClient: # them -> QdrantClient de tra ve
+def get_qdrant_client() -> QdrantClient:
     global _client
     if _client is not None:
         return _client
@@ -45,31 +44,24 @@ def get_qdrant_client() -> QdrantClient: # them -> QdrantClient de tra ve
         logger.info("Successfully connected to Qdrant")
         return _client
     
-    except Exception as e:
-        logger.error(f"Failed to connect to Qdrant: {e}")
-        raise ConnectionError(f"Cannot connect to Qdrant database: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to connect to Qdrant: {exc}")
+        raise ConnectionError(f"Cannot connect to Qdrant database: {exc}") from exc
 
-def ensure_collection(client: QdrantClient): # truyen vao client de tao collection
+def ensure_collection(client: QdrantClient):
     existing_collection = [collection.name for collection in client.get_collections().collections]
     
     if COLLECTION_NAME in existing_collection:
         logger.info(f"Collection '{COLLECTION_NAME}' already exists.")
         return
     
-    logger.info(f"Creating collection '{COLLECTION_NAME}' with hybrid vectors (dense + sparse)...")
+    logger.info(f"Creating collection '{COLLECTION_NAME}'...")
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config={
-            "dense": VectorParams(
-                size=VECTOR_SIZE,
-                distance=Distance[DISTANCE.upper()]
-            )
-        },
-        sparse_vectors_config={
-            "sparse": SparseVectorParams(
-                index=SparseIndexParams()
-            )
-        }
+        vectors_config=VectorParams(
+            size=VECTOR_SIZE,
+            distance=Distance[DISTANCE.upper()]
+        )
     )
-    logger.info(f"Collection '{COLLECTION_NAME}' created with dense vector size {VECTOR_SIZE}, distance '{DISTANCE}', and sparse vectors.")
+    logger.info(f"Collection '{COLLECTION_NAME}' created successfully.")
     

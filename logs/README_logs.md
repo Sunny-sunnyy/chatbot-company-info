@@ -5,6 +5,7 @@
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-26 12:23 +07 - Cập nhật trạng thái `application.log` sau khi pipeline ingestion chạy và ghi log.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -21,13 +22,13 @@ File này mô tả nhiệm vụ của thư mục `logs` và trạng thái hiện
 Trạng thái hiện tại:
 
 - File tồn tại.
-- File đang rỗng.
+- File hiện có nội dung log.
 - File này là đường dẫn được khai báo trong `config/logging.yaml`.
 
 Nhiệm vụ hiện tại của file:
 
 - Lưu log khi cấu hình logging ghi ra file.
-- Tính tới thời điểm cập nhật này, file chưa có nội dung log.
+- Tính tới thời điểm cập nhật này, file đã ghi log từ lần chạy ingestion pipeline, bao gồm warning khi split text rỗng và log kết nối/upsert vào Qdrant.
 
 ## Cách Hoạt Động Hiện Tại
 

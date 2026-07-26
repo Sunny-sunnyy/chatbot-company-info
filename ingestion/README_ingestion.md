@@ -9,6 +9,7 @@
 - 2026-07-25 17:23 +07 - Cập nhật trạng thái `pipeline.py`, danh sách file chunking và thư mục helper theo mã nguồn hiện tại.
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau buổi 4: `vectorstore` đã có code nhưng pipeline vẫn chưa chạy được end-to-end.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn trong thư mục `ingestion`.
+- 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: pipeline đã chạy thành công bằng `uv run python -m ingestion.pipeline` và upsert 450 chunks vào Qdrant.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -78,10 +79,13 @@ Nội dung hiện tại:
 
 Hàm `run_ingestion_pipeline()` hiện tạo list `all_chunks`, gọi các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, sau đó gọi `upsert_chunks(all_chunks)` nếu có chunk.
 
-Trạng thái hiện tại của file này chưa chạy được nguyên vẹn vì:
+Trạng thái hiện tại của file này đã được người dùng chạy thành công bằng:
 
-- File đang import `ingestion.chunking.interiorStylesnteriorStyles`, nhưng file thật trong thư mục là `ingestion/chunking/interiorStyles.py`.
-- File đang import `upsert_chunks` từ `vectorstore.upsert`. `vectorstore/upsert.py` hiện đã có code, nhưng import `vectorstore.*` đang bị ảnh hưởng bởi dependency package tên `vectorstore` trong môi trường `.venv`, và `upsert.py` còn tham chiếu các module local chưa tồn tại là `vectorstore.hybrid_index` và `embedding.sparse_embedder`.
+```bash
+uv run python -m ingestion.pipeline
+```
+
+Log chạy thực tế ghi nhận pipeline đã upsert 450 chunks vào vector store.
 
 Vai trò và luồng hoạt động:
 
@@ -90,7 +94,7 @@ Vai trò và luồng hoạt động:
 - `run_ingestion_pipeline()` tạo `all_chunks`, gọi lần lượt các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, rồi gom toàn bộ chunk vào một list.
 - Nếu `all_chunks` rỗng, pipeline log warning và dừng.
 - Nếu có chunk, pipeline gọi `upsert_chunks(all_chunks)` để chuyển dữ liệu sang vector store.
-- Trạng thái chạy hiện tại: file mô tả đúng ý định orchestration, nhưng chưa import/chạy được end-to-end vì lỗi import `interiorStylesnteriorStyles` và các vấn đề trong module `vectorstore`.
+- Trạng thái chạy hiện tại: pipeline đã chạy end-to-end với Qdrant local và upsert 450 chunks thành công theo log người dùng cung cấp sau buổi 5.
 
 ## Thư Mục Con Hiện Có
 
@@ -133,7 +137,18 @@ Luồng ingestion đã có ở mức mã nguồn:
 4. `load_data.py` ghi từng bảng có dữ liệu sang `data/processed`.
 5. Các file trong `ingestion/chunking` đọc dữ liệu từ `data/processed` và trả về list chunk.
 6. `pipeline.py` gom chunk từ nhiều hàm chunking.
-7. `pipeline.py` gọi `upsert_chunks`, nhưng luồng pipeline chưa chạy được nguyên vẹn trong trạng thái hiện tại vì lỗi import `interiorStylesnteriorStyles` và các vấn đề import/module trong phần `vectorstore`.
+7. `pipeline.py` gọi `upsert_chunks`.
+8. `vectorstore/upsert.py` đảm bảo collection Qdrant tồn tại, build dense-only point và upsert point vào Qdrant.
+
+Sau buổi 5, luồng này đã chạy thành công với Qdrant local. Log chạy thực tế ghi nhận:
+
+- Collection `nmk_chatbot_collection` được tạo thành công.
+- Embedding model `intfloat/multilingual-e5-small` được load.
+- 450 Qdrant points được build.
+- 450 points được upsert vào collection.
+- 450 chunks được upsert vào vector store.
+
+Trong lúc chạy có warning `Empty text provided to split_paragraphs` cho một số bản ghi thiếu text để chia đoạn. Warning này không làm pipeline dừng.
 
 ## Ghi Chú Kỹ Thuật
 
