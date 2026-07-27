@@ -11,6 +11,7 @@
 - 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi xoá `chat.py` ở thư mục gốc; luồng chat hiện nằm trong `api/routes/chat.py`.
 - 2026-07-27 16:03 +07 - Bổ sung luồng OpenRouter isolated path: `llm/generator_openai.py`, `api/routes/chat_openai.py`, endpoint `POST /api/chat/openai`, frontend gọi endpoint mới và automated tests liên quan.
 - 2026-07-27 17:13 +07 - Cập nhật trạng thái backend entrypoint: `uv run python -m api.app` không còn bật Uvicorn reload để tránh WatchFiles theo dõi toàn repo.
+- 2026-07-27 17:19 +07 - Đổi backend entrypoint sang host `localhost` để backend chạy tại `localhost:8000`.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -105,7 +106,7 @@ uv run python -m api.app
 Backend mặc định chạy tại:
 
 ```text
-http://127.0.0.1:8000
+http://localhost:8000
 ```
 
 Health check:

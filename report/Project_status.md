@@ -17,6 +17,7 @@
 - 2026-07-27 16:03 +07 - Cập nhật trạng thái sau khi thêm luồng OpenRouter isolated path bằng OpenAI Agents SDK, endpoint `POST /api/chat/openai`, frontend gọi endpoint mới và automated tests không gọi API thật.
 - 2026-07-27 17:04 +07 - Cập nhật trạng thái sau khi xác định `final_output` rỗng do OpenRouter reasoning tokens dùng hết `max_tokens`; `generator_openai.py` đã tắt reasoning bằng `ModelSettings.extra_body`.
 - 2026-07-27 17:13 +07 - Cập nhật `api/app.py` để lệnh `uv run python -m api.app` chạy Uvicorn với `reload=False` và bind `127.0.0.1`, tránh WatchFiles theo dõi toàn repo.
+- 2026-07-27 17:19 +07 - Đổi host trong `api/app.py` sang `localhost` để backend chạy tại `localhost:8000`.
 
 ## Mốc Học Hiện Tại
 
@@ -64,7 +65,7 @@ Các thư mục chính hiện có:
 
 `core/schema.py` đã có dataclass `RetrievedDocument`. Schema này gồm `id`, `score`, `text` và `metadata`, đang được `retrieval/retriever.py` dùng để chuẩn hóa kết quả truy vấn từ Qdrant.
 
-`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `127.0.0.1`, port `8000` và không bật reload.
+`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `localhost`, port `8000` và không bật reload.
 
 `api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model và trả cấu hình LLM provider/model. Health check này có thể load embedding model khi được gọi.
 

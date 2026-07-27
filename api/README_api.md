@@ -5,6 +5,7 @@
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api` sau buổi 7, đối chiếu với mã nguồn FastAPI hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả route OpenRouter mới `POST /api/chat/openai` và trạng thái đăng ký router trong `api/app.py`.
 - 2026-07-27 17:13 +07 - Cập nhật entrypoint `api/app.py` để `uv run python -m api.app` chạy Uvicorn không bật reload và chỉ bind `127.0.0.1`.
+- 2026-07-27 17:19 +07 - Đổi host Uvicorn trong `api/app.py` từ `127.0.0.1` sang `localhost` theo yêu cầu chạy backend tại `localhost:8000`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -37,7 +38,7 @@ Nội dung chính:
 - Đăng ký `chat_router` với prefix `/api`.
 - Đăng ký `chat_openai_router` với prefix `/api`.
 - Định nghĩa endpoint root `GET /`.
-- Nếu chạy file bằng module, gọi `uvicorn.run("api.app:app", host="127.0.0.1", port=8000, reload=False)`.
+- Nếu chạy file bằng module, gọi `uvicorn.run("api.app:app", host="localhost", port=8000, reload=False)`.
 
 Vai trò và luồng hoạt động:
 
@@ -93,7 +94,7 @@ uv run python -m api.app
 Backend mặc định chạy ở:
 
 ```text
-http://127.0.0.1:8000
+http://localhost:8000
 ```
 
 Route hiện có:
