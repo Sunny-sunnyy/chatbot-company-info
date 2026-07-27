@@ -9,12 +9,16 @@
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `llm.py` đã được đổi tên thành `generator.py`; `generator.py` và `prompt.py` đã có code.
 - 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `api/routes/chat.py` đã gọi `generate_answer`, nhưng `generator.py` vẫn chưa hỗ trợ provider `openrouter`.
 - 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi `chat.py` ở thư mục gốc được xoá.
+- 2026-07-27 16:03 +07 - Bổ sung `generator_openai.py` dùng OpenAI Agents SDK với OpenRouter, giữ `generator.py` làm legacy Ollama generator.
+- 2026-07-27 17:04 +07 - Cập nhật `generator_openai.py` để tắt reasoning của OpenRouter bằng `ModelSettings.extra_body`, tránh trường hợp model dùng hết `max_tokens` cho reasoning và trả `final_output` rỗng.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `llm` chứa mã tạo prompt và gọi mô hình ngôn ngữ để sinh câu trả lời từ context đã truy xuất.
 
-Tính tới sau buổi 7, thư mục này có prompt template và generator gọi Ollama. File `llm.py` không còn trong cây thư mục hiện tại; mã generator nằm ở `generator.py`.
+Tính tới thời điểm hiện tại, thư mục này có prompt template, legacy generator gọi Ollama trong `generator.py`, và generator OpenRouter mới trong `generator_openai.py`.
+
+File `llm.py` không còn trong cây thư mục hiện tại.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -75,7 +79,34 @@ Vai trò và luồng hoạt động:
 - `generator.py` chịu trách nhiệm gọi LLM để sinh câu trả lời dựa trên prompt đã build.
 - Input chính là `context: str` và `question: str`.
 - Output là câu trả lời dạng `str`.
-- Trạng thái chạy hiện tại: code chỉ hỗ trợ nhánh `ollama`, trong khi `config/settings.yaml` hiện đang cấu hình `llm.provider` là `openrouter`. Với cấu hình hiện tại, hàm sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ thay vì gọi LLM. File này chưa được sửa trong lần cập nhật sau buổi 7.
+- Trạng thái chạy hiện tại: file này được giữ nguyên làm legacy Ollama generator. Code chỉ hỗ trợ nhánh `ollama`; với cấu hình `llm.provider: openrouter`, file này sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ.
+
+### `generator_openai.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Import `Agent`, `ModelSettings`, `OpenAIChatCompletionsModel`, `Runner` và `set_tracing_disabled` từ OpenAI Agents SDK.
+- Import `AsyncOpenAI` và các exception OpenAI client.
+- Import `SYSTEM_PROMPT` và `build_prompt` từ `llm.prompt`.
+- Đọc cấu hình `llm` từ `core.settings_loader.load_settings()`.
+- Định nghĩa helper `_validate_inputs(context, question)`.
+- Định nghĩa helper `_build_openrouter_agent()`.
+- Định nghĩa async function `generate_answer_async(context: str, question: str) -> str`.
+
+Vai trò và luồng hoạt động:
+
+- `generator_openai.py` chịu trách nhiệm sinh câu trả lời bằng OpenRouter qua OpenAI Agents SDK.
+- Input chính là `context: str` và `question: str`.
+- Output là câu trả lời dạng `str`.
+- `generate_answer_async()` kiểm tra context/question rỗng, kiểm tra provider `openrouter`, kiểm tra API key OpenRouter đã được cấu hình, build prompt, tạo OpenRouter-compatible `AsyncOpenAI`, tạo `OpenAIChatCompletionsModel`, tạo `Agent` tên `nmk_chatbot`, rồi gọi `await Runner.run(agent, prompt)`.
+- File dùng `ModelSettings` để truyền `temperature` và `max_tokens`.
+- File dùng `ModelSettings.extra_body={"reasoning": {"effort": "none"}}` để tắt reasoning tokens ở OpenRouter.
+- File truyền `timeout` vào `AsyncOpenAI`.
+- File gọi `set_tracing_disabled(True)` trước khi chạy OpenRouter để tránh yêu cầu tracing về OpenAI platform trong luồng dùng OpenRouter.
+- File không đọc hoặc in nội dung secret; API key được lấy từ settings đã được nạp từ biến môi trường.
+- Trạng thái test hiện tại: `tests/test_llm_generator_openai.py` kiểm tra các nhánh chính và cấu hình `extra_body` bằng monkeypatch, không gọi OpenRouter thật.
 
 ### `__init__.py`
 
@@ -85,7 +116,7 @@ File đánh dấu `llm` là Python package.
 
 ## Cách Hoạt Động Hiện Tại
 
-Luồng LLM theo code hiện tại:
+Luồng legacy Ollama theo `generator.py`:
 
 1. Nhận context và question.
 2. Build prompt bằng `llm.prompt.build_prompt`.
@@ -95,11 +126,24 @@ Luồng LLM theo code hiện tại:
 
 Luồng này hiện đã được `api/routes/chat.py` gọi trong endpoint `POST /api/chat`.
 
+Luồng OpenRouter mới theo `generator_openai.py`:
+
+1. Nhận context và question.
+2. Build prompt bằng `llm.prompt.build_prompt`.
+3. Kiểm tra provider trong settings là `openrouter`.
+4. Tạo OpenRouter-compatible model bằng OpenAI Agents SDK.
+5. Gọi `Runner.run(...)` async để sinh câu trả lời.
+6. Trả về câu trả lời hoặc thông báo lỗi tiếng Việt.
+
+Với model hiện tại `qwen/qwen3.5-9b`, nếu không tắt reasoning, OpenRouter có thể trả HTTP 200 nhưng `result.final_output` rỗng vì toàn bộ `max_tokens` bị dùng cho reasoning tokens. Vì vậy `generator_openai.py` hiện tắt reasoning bằng `extra_body`.
+
+Luồng này hiện được `api/routes/chat_openai.py` gọi trong endpoint `POST /api/chat/openai`.
+
 `chat.py` ở thư mục gốc đã được xoá. Backend hiện chạy qua `api/app.py`.
 
 ## Ghi Chú Kỹ Thuật
 
-Dependency `ollama` đã có trong `pyproject.toml`.
+Dependency `ollama`, `openai` và `openai-agents` đã có trong `pyproject.toml`.
 
 Các giá trị cấu hình LLM hiện đọc từ `config/settings.yaml`, gồm:
 

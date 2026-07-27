@@ -44,7 +44,7 @@ export const chatService = {
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
       const response = await axios.post<ChatResponse>(
-        `${API_URL}/api/chat`,
+        `${API_URL}/api/chat/openai`,
         request,
         {
           headers: {

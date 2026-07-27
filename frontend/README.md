@@ -3,6 +3,7 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-26 21:02 +07 - Cập nhật README ngắn của frontend theo trạng thái mã nguồn sau buổi 7 và kết quả build frontend.
+- 2026-07-27 16:03 +07 - Cập nhật ghi chú endpoint sau khi frontend chuyển sang gọi route OpenRouter `POST /api/chat/openai`.
 
 ## Nhiệm Vụ Của File
 
@@ -37,6 +38,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 Nếu không cấu hình biến này, frontend mặc định gọi backend tại `http://localhost:8000`.
+
+Endpoint chat hiện được gọi:
+
+```text
+POST http://localhost:8000/api/chat/openai
+```
+
+Hướng dẫn đổi lại endpoint cũ nằm trong `README_frontend.md` và `lib/README_lib.md`.
 
 ## Trạng Thái Hiện Tại
 

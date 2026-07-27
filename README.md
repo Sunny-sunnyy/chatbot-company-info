@@ -9,6 +9,8 @@
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: tại thời điểm đó `chat.py` vẫn rỗng, còn retrieval và LLM đã có code trong các folder riêng.
 - 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: bổ sung mô tả `api`, `frontend`, `core/schema.py` và lệnh chạy dự án bằng `uv`.
 - 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi xoá `chat.py` ở thư mục gốc; luồng chat hiện nằm trong `api/routes/chat.py`.
+- 2026-07-27 16:03 +07 - Bổ sung luồng OpenRouter isolated path: `llm/generator_openai.py`, `api/routes/chat_openai.py`, endpoint `POST /api/chat/openai`, frontend gọi endpoint mới và automated tests liên quan.
+- 2026-07-27 17:13 +07 - Cập nhật trạng thái backend entrypoint: `uv run python -m api.app` không còn bật Uvicorn reload để tránh WatchFiles theo dõi toàn repo.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -40,11 +42,15 @@ File này hướng dẫn chạy Qdrant bằng Docker Compose, kiểm tra trạng
 
 ### `api/`
 
-Thư mục này chứa FastAPI backend của chatbot. README chi tiết nằm ở `api/README_api.md`.
+Thư mục này chứa FastAPI backend của chatbot, gồm route chat legacy và route chat OpenRouter. README chi tiết nằm ở `api/README_api.md`.
 
 ### `frontend/`
 
-Thư mục này chứa frontend Next.js của chatbot. README chi tiết nằm ở `frontend/README_frontend.md`.
+Thư mục này chứa frontend Next.js của chatbot. Frontend hiện gọi endpoint OpenRouter `POST /api/chat/openai`. README chi tiết nằm ở `frontend/README_frontend.md`.
+
+### `tests/`
+
+Thư mục này chứa automated tests cho luồng OpenRouter mới. README chi tiết nằm ở `tests/README_tests.md`.
 
 ### `docker-compose.yml`
 
@@ -66,7 +72,7 @@ File này tồn tại ở thư mục gốc. Nội dung file không thuộc phầ
 
 File này khai báo project Python `llm-rag`, yêu cầu Python `>=3.12`, dependency runtime và dependency dev.
 
-Dependency hiện có bao gồm FastAPI, Uvicorn, Qdrant client, SentenceTransformer, Ollama, BeautifulSoup, PyYAML và python-dotenv.
+Dependency hiện có bao gồm FastAPI, Uvicorn, Qdrant client, SentenceTransformer, Ollama, OpenAI Python SDK, OpenAI Agents SDK, BeautifulSoup, PyYAML và python-dotenv.
 
 ### `uv.lock`
 
@@ -99,7 +105,7 @@ uv run python -m api.app
 Backend mặc định chạy tại:
 
 ```text
-http://localhost:8000
+http://127.0.0.1:8000
 ```
 
 Health check:
@@ -112,6 +118,12 @@ API chat:
 
 ```text
 http://localhost:8000/api/chat
+```
+
+API chat OpenRouter:
+
+```text
+http://localhost:8000/api/chat/openai
 ```
 
 Chạy frontend trong terminal riêng:
@@ -131,4 +143,10 @@ Trạng thái hiện tại: `frontend/node_modules/` tồn tại local tại th�
 
 ## Lưu Ý Chạy Hiện Tại
 
-`llm/generator.py` hiện chỉ hỗ trợ provider `ollama`, trong khi `config/settings.yaml` đang cấu hình `llm.provider` là `openrouter`. Vì vậy backend có thể import được, nhưng luồng sinh câu trả lời thật chưa khớp provider cho tới khi `llm/generator.py` được sửa ở bước riêng.
+`llm/generator.py` hiện được giữ nguyên làm legacy Ollama generator và chỉ hỗ trợ provider `ollama`.
+
+Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọi bởi endpoint `POST /api/chat/openai`.
+
+Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
+
+`api/app.py` hiện chạy Uvicorn với `reload=False` khi dùng `uv run python -m api.app`. Không dùng reload toàn repo trong lúc chạy song song frontend, vì build/cache của Next.js có thể tạo nhiều file thay đổi và làm WatchFiles gây treo request.

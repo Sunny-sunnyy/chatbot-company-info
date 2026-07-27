@@ -3,12 +3,13 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-26 21:02 +07 - Tạo README tổng quan cho thư mục `frontend` sau buổi 7, đối chiếu với mã nguồn Next.js hiện tại và kết quả build frontend.
+- 2026-07-27 16:03 +07 - Cập nhật trạng thái frontend sau khi `frontend/lib/api.ts` chuyển sang endpoint OpenRouter `POST /api/chat/openai` và ghi hướng dẫn đổi lại endpoint cũ.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `frontend` chứa frontend Next.js cho chatbot NMK.
 
-Frontend hiện hiển thị giao diện chat, gửi câu hỏi tới FastAPI backend qua Axios, nhận câu trả lời và hiển thị sources kèm hình ảnh nếu metadata có URL hình ảnh.
+Frontend hiện hiển thị giao diện chat, gửi câu hỏi tới FastAPI backend qua Axios ở endpoint OpenRouter, nhận câu trả lời và hiển thị sources kèm hình ảnh nếu metadata có URL hình ảnh.
 
 ## Các File Hiện Có
 
@@ -139,13 +140,43 @@ Kiểm tra `npm run build` đã chạy thành công trong phiên kiểm tra này
 
 Development server chưa được khởi động trong phiên kiểm tra này.
 
-## Ghi Chú Kỹ Thuật
+## Endpoint Chat Hiện Tại
 
-Frontend gọi endpoint chat tại:
+Frontend gọi endpoint chat OpenRouter tại:
+
+```text
+POST http://localhost:8000/api/chat/openai
+```
+
+Endpoint cũ vẫn tồn tại ở backend:
 
 ```text
 POST http://localhost:8000/api/chat
 ```
+
+## Cách Đổi Lại Endpoint Cũ
+
+Nếu muốn frontend gọi lại endpoint legacy `POST /api/chat`, sửa file `frontend/lib/api.ts`.
+
+Đổi endpoint trong `chatService.sendMessage(...)` từ:
+
+```ts
+`${API_URL}/api/chat/openai`
+```
+
+về:
+
+```ts
+`${API_URL}/api/chat`
+```
+
+Sau đó chạy lại frontend nếu cần:
+
+```bash
+npm run dev
+```
+
+## Ghi Chú Kỹ Thuật
 
 Frontend gọi health check tại:
 

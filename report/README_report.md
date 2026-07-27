@@ -13,6 +13,9 @@
 - 2026-07-26 16:54 +07 - Cập nhật mô tả `Project_status.md` sau buổi 6: retrieval, prompt template và LLM generator đã có code bước đầu.
 - 2026-07-26 21:02 +07 - Cập nhật mô tả `Project_status.md` sau buổi 7: schema, FastAPI backend và frontend Next.js đã có code bước đầu.
 - 2026-07-26 21:16 +07 - Cập nhật mô tả `Project_status.md` sau khi `chat.py` ở thư mục gốc được xoá.
+- 2026-07-27 16:03 +07 - Cập nhật mô tả `Project_status.md` sau khi thêm luồng OpenRouter isolated path, frontend gọi endpoint mới và automated tests liên quan.
+- 2026-07-27 17:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xử lý lỗi `final_output` rỗng bằng cách tắt OpenRouter reasoning.
+- 2026-07-27 17:13 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` chuyển sang chạy Uvicorn không reload khi dùng `uv run python -m api.app`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -38,7 +41,13 @@ Nội dung hiện có:
 - Trạng thái code retrieval, prompt template và LLM generator qua buổi 6 và buổi 7.
 - Trạng thái schema `RetrievedDocument`, FastAPI backend và frontend Next.js sau buổi 7.
 - Ghi chú `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `api/routes/chat.py`.
-- Ghi chú `llm/generator.py` chưa được sửa cho provider `openrouter`.
+- Ghi chú `llm/generator.py` được giữ nguyên làm legacy Ollama generator.
+- Trạng thái `llm/generator_openai.py` dùng OpenAI Agents SDK với OpenRouter.
+- Trạng thái endpoint mới `POST /api/chat/openai`.
+- Trạng thái frontend hiện gọi endpoint OpenRouter mới và có hướng dẫn đổi lại endpoint cũ trong README frontend.
+- Trạng thái automated tests mới trong thư mục `tests`.
+- Trạng thái tắt OpenRouter reasoning trong `llm/generator_openai.py`.
+- Trạng thái `uv run python -m api.app` không còn bật Uvicorn reload.
 - Chuẩn README hiện tại cho các folder có file Python thật.
 
 ### `README_report.md`

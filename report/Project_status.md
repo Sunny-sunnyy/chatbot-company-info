@@ -14,6 +14,9 @@
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: bổ sung mô tả code retrieval, prompt template và LLM generator; tại thời điểm đó `core/schema.py` và `chat.py` vẫn rỗng.
 - 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: bổ sung `core/schema.py`, FastAPI backend trong `api`, frontend Next.js trong `frontend`, README cho các folder mới và kết quả kiểm tra build frontend.
 - 2026-07-26 21:16 +07 - Cập nhật trạng thái sau khi người dùng xoá `chat.py` ở thư mục gốc và kiểm tra lại file rỗng hiện tại.
+- 2026-07-27 16:03 +07 - Cập nhật trạng thái sau khi thêm luồng OpenRouter isolated path bằng OpenAI Agents SDK, endpoint `POST /api/chat/openai`, frontend gọi endpoint mới và automated tests không gọi API thật.
+- 2026-07-27 17:04 +07 - Cập nhật trạng thái sau khi xác định `final_output` rỗng do OpenRouter reasoning tokens dùng hết `max_tokens`; `generator_openai.py` đã tắt reasoning bằng `ModelSettings.extra_body`.
+- 2026-07-27 17:13 +07 - Cập nhật `api/app.py` để lệnh `uv run python -m api.app` chạy Uvicorn với `reload=False` và bind `127.0.0.1`, tránh WatchFiles theo dõi toàn repo.
 
 ## Mốc Học Hiện Tại
 
@@ -21,7 +24,7 @@ Dự án hiện đã được kiểm tra sau khi hoàn thành buổi 7. Bảy bu
 
 Buổi 7 trình bày cách nối retrieval với generator thành luồng chat, tạo FastAPI backend và tạo frontend Next.js để gọi API chat.
 
-Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, LLM generator, FastAPI backend và frontend Next.js. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `api/routes/chat.py`.
+Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
@@ -37,7 +40,7 @@ Các thư mục chính hiện có:
 
 - `config`: chứa cấu hình YAML cho ứng dụng và logging.
 - `core`: chứa mã dùng chung để đọc settings và cấu hình logging.
-- `api`: chứa FastAPI backend, health check và chat route.
+- `api`: chứa FastAPI backend, health check, chat route legacy và chat route OpenRouter.
 - `data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
 - `frontend`: chứa frontend Next.js, React, TypeScript và Tailwind CSS cho giao diện chat.
 - `ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
@@ -46,10 +49,11 @@ Các thư mục chính hiện có:
 - `embedding`: chứa mã load model embedding và tạo embedding theo batch.
 - `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point và upsert chunk vào Qdrant.
 - `retrieval`: chứa code truy vấn Qdrant bằng embedding query và chuẩn hóa kết quả về `RetrievedDocument`.
-- `llm`: chứa prompt template và generator tạo câu trả lời bằng Ollama khi `llm.provider` là `ollama`.
+- `llm`: chứa prompt template, legacy Ollama generator và OpenRouter generator dùng OpenAI Agents SDK.
 - `logs`: chứa file log của ứng dụng.
 - `report`: chứa tài liệu báo cáo trạng thái dự án.
 - `tai_lieu`: chứa phiên âm các buổi học.
+- `tests`: chứa automated tests cho luồng OpenRouter mới, không gọi API thật.
 - `qdrant_storage`: chứa dữ liệu local do Qdrant Docker container tạo ra.
 
 ## Phần Đã Có Mã Nguồn
@@ -60,11 +64,13 @@ Các thư mục chính hiện có:
 
 `core/schema.py` đã có dataclass `RetrievedDocument`. Schema này gồm `id`, `score`, `text` và `metadata`, đang được `retrieval/retriever.py` dùng để chuẩn hóa kết quả truy vấn từ Qdrant.
 
-`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health` và `POST /api/chat`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`.
+`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `127.0.0.1`, port `8000` và không bật reload.
 
 `api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model và trả cấu hình LLM provider/model. Health check này có thể load embedding model khi được gọi.
 
 `api/routes/chat.py` đã có endpoint `POST /chat`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat`. Route nhận `query` và `session_id`, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `generate_answer(context, question)`, lưu session trong memory và trả `answer`, `sources`, `session_id`.
+
+`api/routes/chat_openai.py` đã có endpoint `POST /chat/openai`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat/openai`. Route này giữ schema riêng, nhận `query` và `session_id`, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `await generate_answer_async(context, question)` từ `llm/generator_openai.py`, lưu session trong memory và trả `answer`, `sources`, `session_id`.
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
@@ -97,13 +103,21 @@ Các thư mục chính hiện có:
 
 `llm/prompt.py` đã có `SYSTEM_PROMPT` và hàm `build_prompt(context, question)`. File này tạo prompt tiếng Việt cho chatbot NMK Architects, yêu cầu trả lời dựa trên context và không tự bịa thông tin ngoài dữ liệu.
 
-`llm/generator.py` đã có hàm `generate_answer(context, question)`. File này kiểm tra context/question rỗng, gọi `build_prompt(...)`, rồi nếu `llm.provider` là `ollama` thì gọi `ollama.Client(...).chat(...)` để sinh câu trả lời. Trạng thái hiện tại: `config/settings.yaml` đang để `llm.provider` là `openrouter`, trong khi code generator hiện chỉ hỗ trợ nhánh `ollama`; với cấu hình hiện tại, hàm sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ.
+`llm/generator.py` đã có hàm `generate_answer(context, question)`. File này được giữ nguyên làm legacy Ollama generator: kiểm tra context/question rỗng, gọi `build_prompt(...)`, rồi nếu `llm.provider` là `ollama` thì gọi `ollama.Client(...).chat(...)` để sinh câu trả lời. Với cấu hình `llm.provider: openrouter`, file này sẽ trả về thông báo nhà cung cấp mô hình không được hỗ trợ.
+
+`llm/generator_openai.py` đã có hàm async `generate_answer_async(context, question)`. File này kiểm tra input, yêu cầu `llm.provider` là `openrouter`, lấy API key OpenRouter từ settings đã nạp biến môi trường, build prompt bằng `build_prompt(...)`, tạo `AsyncOpenAI` với `base_url` OpenRouter, tạo `OpenAIChatCompletionsModel`, tạo `Agent` tên `nmk_chatbot`, truyền `temperature` và `max_tokens` qua `ModelSettings`, tắt OpenRouter reasoning bằng `extra_body={"reasoning": {"effort": "none"}}`, disable tracing bằng `set_tracing_disabled(True)`, rồi gọi `await Runner.run(agent, prompt)` để sinh câu trả lời. File này trả thông báo tiếng Việt khi thiếu API key, provider không hỗ trợ, timeout, lỗi kết nối hoặc lỗi API.
 
 `frontend/app/page.tsx` đã render `ChatInterface`. `frontend/app/layout.tsx` đã khai báo layout gốc và metadata. `frontend/app/globals.css` đã cấu hình Tailwind và CSS variables nền/chữ.
 
 `frontend/components/ChatInterface.tsx` đã có UI chat client-side. Component lưu messages, input, loading state và session id; gửi câu hỏi bằng `chatService.sendMessage(...)`; hiển thị câu trả lời, lỗi cơ bản và tối đa 3 hình ảnh từ metadata source nếu có.
 
-`frontend/lib/api.ts` đã có Axios client. File này gọi `POST /api/chat` và có hàm `healthCheck()` gọi `GET /health`. `healthCheck()` hiện được định nghĩa nhưng chưa được gọi trong UI.
+`frontend/lib/api.ts` đã có Axios client. File này hiện gọi `POST /api/chat/openai` và có hàm `healthCheck()` gọi `GET /health`. `healthCheck()` hiện được định nghĩa nhưng chưa được gọi trong UI.
+
+`tests/conftest.py` đã thêm project root vào `sys.path` để pytest import được package local.
+
+`tests/test_llm_generator_openai.py` đã test `generate_answer_async()` với context rỗng, question rỗng, thiếu API key OpenRouter và happy path monkeypatch `Runner.run`. Test này không gọi OpenRouter thật.
+
+`tests/test_api_chat_openai.py` đã test trực tiếp `chat_openai_endpoint()` với monkeypatch retrieval và generator. Test này không gọi Qdrant hoặc OpenRouter thật.
 
 ## File Rỗng Hiện Tại
 
@@ -147,6 +161,16 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_
 ```
 
 Kết quả: các file Python liên quan compile được và `api.app` import được.
+
+Sau khi thêm luồng OpenRouter isolated path, các kiểm tra mới đã chạy thành công:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_llm_generator_openai.py -q
+UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_api_chat_openai.py -q
+npm run build
+```
+
+Kết quả: generator tests pass, route OpenRouter test pass và frontend production build compile thành công. E2E thật với Qdrant, backend, frontend và OpenRouter API key ban đầu trả response có `answer` rỗng vì OpenRouter dùng hết `max_tokens` cho reasoning tokens. Sau khi tắt reasoning bằng `ModelSettings.extra_body`, request thật qua backend tạm đã trả `answer_len: 730`.
 
 Frontend hiện có `node_modules/` local tại thời điểm kiểm tra này. Thư mục này được `frontend/.gitignore` ignore.
 
@@ -196,7 +220,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 46 file, 302 nodes, 461 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 51 file, 357 nodes, 552 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -218,15 +242,19 @@ Qdrant đang được chạy bằng Docker Compose từ `docker-compose.yml`, se
 
 Nhà cung cấp LLM trong settings đang là `openrouter`, tên model đang là `qwen/qwen3.5-9b`, temperature là `0.2`.
 
-Code LLM hiện tại nằm trong `llm/generator.py`, không còn file `llm/llm.py` trong cây thư mục hiện tại. Generator hiện chỉ có nhánh gọi Ollama khi `llm.provider == "ollama"`, nên chưa khớp hoàn toàn với cấu hình `openrouter` trong `config/settings.yaml`.
+Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` trong cây thư mục hiện tại. `llm/generator.py` chỉ có nhánh gọi Ollama khi `llm.provider == "ollama"` và được giữ nguyên để so sánh/rollback.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval, schema, API backend và frontend đã có mã bước đầu sau buổi 7. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại.
+
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
 
 Backend chạy bằng:
 
 ```bash
 uv run python -m api.app
 ```
+
+Lệnh này hiện không bật Uvicorn reload, nên không còn WatchFiles theo dõi toàn bộ repo trong lúc chạy song song frontend.
 
 Frontend chạy trong terminal riêng bằng:
 
@@ -236,6 +264,12 @@ npm install
 npm run dev
 ```
 
-`llm/generator.py` chưa được sửa trong lần cập nhật sau buổi 7 này. Với cấu hình OpenRouter hiện tại, luồng chat API có thể đi tới bước generator nhưng sẽ nhận thông báo provider không được hỗ trợ cho tới khi generator được cập nhật ở bước riêng.
+Frontend hiện gọi endpoint OpenRouter mới:
+
+```text
+POST /api/chat/openai
+```
+
+Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, sửa endpoint trong `frontend/lib/api.ts` theo hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 
 README ở các folder có file Python thật hiện đã được bổ sung phần giải thích vai trò file mã nguồn, hàm hoặc luồng chính, input/output khi rõ ràng và trạng thái chạy hiện tại nếu luồng chưa hoàn chỉnh. Các file rỗng vẫn được ghi rõ là chưa phát triển.

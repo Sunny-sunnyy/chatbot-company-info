@@ -20,10 +20,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from api.routes import chat_router, health_router
+from api.routes import chat_openai_router, chat_router, health_router
 
 app.include_router(health_router, tags=["health"])
 app.include_router(chat_router, prefix="/api", tags=["chat"])
+app.include_router(chat_openai_router, prefix="/api", tags=["chat"])
 
 @app.get("/")
 async def root():
@@ -36,4 +37,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api.app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api.app:app", host="127.0.0.1", port=8000, reload=False)

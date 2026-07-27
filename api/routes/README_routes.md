@@ -3,12 +3,13 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api/routes` sau buổi 7, đối chiếu với mã nguồn route hiện tại.
+- 2026-07-27 16:03 +07 - Bổ sung mô tả `chat_openai.py` và export `chat_openai_router` cho endpoint `POST /api/chat/openai`.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `api/routes` chứa các route được đăng ký vào FastAPI app.
 
-Hiện tại thư mục có route chat và file gom router để `api/app.py` import.
+Hiện tại thư mục có route chat legacy, route chat OpenRouter và file gom router để `api/app.py` import.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -51,13 +52,41 @@ File này đã có mã nguồn.
 Nội dung chính:
 
 - Import `router` từ `api.routes.chat` thành `chat_router`.
+- Import `router` từ `api.routes.chat_openai` thành `chat_openai_router`.
 - Import `router` từ `api.health` thành `health_router`.
-- Khai báo `__all__ = ["chat_router", "health_router"]`.
+- Khai báo `__all__ = ["chat_router", "chat_openai_router", "health_router"]`.
 
 Vai trò và luồng hoạt động:
 
 - `__init__.py` gom router để `api/app.py` có thể import từ `api.routes`.
 - File này không tự chạy server.
+
+### `chat_openai.py`
+
+File này đã có mã nguồn.
+
+Nội dung chính:
+
+- Import `APIRouter` và `HTTPException`.
+- Import `BaseModel` và `Field` từ Pydantic.
+- Import `retrieve` từ `retrieval.retriever`.
+- Import `generate_answer_async` từ `llm.generator_openai`.
+- Đọc `MAX_QUERY_LENGTH` từ biến môi trường, mặc định `500`.
+- Tạo dictionary `sessions` trong memory.
+- Định nghĩa Pydantic model riêng `ChatRequest`.
+- Định nghĩa Pydantic model riêng `ChatResponse`.
+- Định nghĩa endpoint `POST /chat/openai`.
+
+Vai trò và luồng hoạt động:
+
+- `chat_openai.py` là route OpenRouter song song với route legacy `chat.py`.
+- File nhận câu hỏi từ frontend qua API mới.
+- `ChatRequest` nhận `query` và `session_id` tùy chọn.
+- `ChatResponse` trả `answer`, `sources` và `session_id`.
+- `chat_openai_endpoint(request)` strip query, tạo session id nếu chưa có, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `await generate_answer_async(context, question)`, rồi trả câu trả lời và sources.
+- Input chính là JSON body dạng `{"query": "...", "session_id": "..."}`.
+- Output chính là JSON response theo `ChatResponse`.
+- Trạng thái hiện tại: file có automated test trong `tests/test_api_chat_openai.py`; test monkeypatch retrieval và generator nên không gọi Qdrant hoặc OpenRouter thật.
 
 ## Cách Hoạt Động Hiện Tại
 
@@ -65,6 +94,12 @@ Vai trò và luồng hoạt động:
 
 ```text
 POST /api/chat
+```
+
+`api/app.py` cũng đăng ký `chat_openai_router` với prefix `/api`, nên endpoint chat OpenRouter đầy đủ là:
+
+```text
+POST /api/chat/openai
 ```
 
 ## Ghi Chú Kỹ Thuật

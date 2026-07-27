@@ -3,6 +3,7 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `frontend/lib` sau buổi 7, đối chiếu với API client hiện tại.
+- 2026-07-27 16:03 +07 - Cập nhật `api.ts` sau khi frontend chuyển sang gọi endpoint OpenRouter `POST /api/chat/openai` và bổ sung hướng dẫn đổi lại endpoint cũ.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -35,7 +36,7 @@ Nội dung chính:
 Vai trò và luồng hoạt động:
 
 - `api.ts` là lớp client mỏng để frontend gọi backend.
-- `sendMessage(request)` gửi POST tới `${API_URL}/api/chat` với JSON body gồm `query` và `session_id` tùy chọn.
+- `sendMessage(request)` gửi POST tới `${API_URL}/api/chat/openai` với JSON body gồm `query` và `session_id` tùy chọn.
 - `healthCheck()` gửi GET tới `${API_URL}/health` và trả `true` nếu status HTTP là `200`.
 - Input chính của `sendMessage` là `ChatRequest`.
 - Output chính của `sendMessage` là `ChatResponse` gồm `answer`, `sources` và `session_id`.
@@ -52,8 +53,30 @@ http://localhost:8000
 Endpoint được gọi:
 
 ```text
-POST /api/chat
+POST /api/chat/openai
 GET /health
+```
+
+## Cách Đổi Lại Endpoint Cũ
+
+Nếu muốn frontend gọi lại route legacy, sửa file `frontend/lib/api.ts`.
+
+Đổi dòng endpoint trong `chatService.sendMessage(...)` từ:
+
+```ts
+`${API_URL}/api/chat/openai`
+```
+
+về:
+
+```ts
+`${API_URL}/api/chat`
+```
+
+Sau khi sửa, chạy lại hoặc để Next.js dev server hot reload:
+
+```bash
+npm run dev
 ```
 
 ## Ghi Chú Kỹ Thuật
