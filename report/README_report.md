@@ -17,6 +17,7 @@
 - 2026-07-27 17:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xử lý lỗi `final_output` rỗng bằng cách tắt OpenRouter reasoning.
 - 2026-07-27 17:13 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` chuyển sang chạy Uvicorn không reload khi dùng `uv run python -m api.app`.
 - 2026-07-29 10:28 +07 - Cập nhật mô tả `Project_status.md` và `Agent_session_prompt.md` sau khi bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo `tai_lieu/p2/0.txt`.
+- 2026-07-29 20:56 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/2.txt`: chunking nâng cao, bỏ `heroSlides.py` khỏi pipeline và kiểm tra số chunk hiện tại.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -51,6 +52,7 @@ Nội dung hiện có:
 - Trạng thái `uv run python -m api.app` không còn bật Uvicorn reload.
 - Chuẩn README hiện tại cho các folder có file Python thật.
 - Mốc bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo bài giới thiệu `tai_lieu/p2/0.txt`, đồng thời phân biệt rõ nội dung định hướng với trạng thái code đã triển khai.
+- Mốc sau `tai_lieu/p2/2.txt`: code chunking hiện đã bỏ `heroSlides.py`, pipeline không còn gọi hero slides, các chunk còn lại dùng metadata có `chunk_id`, `chunk_type` và `priority`, và kiểm tra trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert.
 
 ### `README_report.md`
 

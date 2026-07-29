@@ -12,6 +12,7 @@
 - 2026-07-27 16:03 +07 - Bổ sung luồng OpenRouter isolated path: `llm/generator_openai.py`, `api/routes/chat_openai.py`, endpoint `POST /api/chat/openai`, frontend gọi endpoint mới và automated tests liên quan.
 - 2026-07-27 17:13 +07 - Cập nhật trạng thái backend entrypoint: `uv run python -m api.app` không còn bật Uvicorn reload để tránh WatchFiles theo dõi toàn repo.
 - 2026-07-27 17:19 +07 - Đổi backend entrypoint sang host `localhost` để backend chạy tại `localhost:8000`.
+- 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline chunking không còn dùng `heroSlides.py`, kiểm tra import pipeline và số chunk hiện tại.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -63,7 +64,7 @@ Tính tới sau buổi 5, người dùng đã chạy Qdrant container thành cô
 
 Thư mục này được Docker tạo khi chạy Qdrant.
 
-Đây là dữ liệu local của vector database. Không xóa thư mục này nếu muốn giữ collection và point đã upsert.
+Đây là dữ liệu local của vector database. Không xóa thư mục này nếu muốn giữ collection và point đã upsert. Sau cập nhật `p2/2`, code chunking đã đổi thành phần chunk nhưng chưa chạy lại pipeline để thay thế dữ liệu đang có trong Qdrant trong phiên kiểm tra tài liệu này.
 
 ### `brainstorming.md`
 
@@ -96,6 +97,8 @@ Nếu cần nạp lại dữ liệu vào Qdrant:
 ```bash
 uv run python -m ingestion.pipeline
 ```
+
+Pipeline hiện không còn tạo chunk từ `heroSlides.json`. File `data/processed/heroSlides.json` vẫn tồn tại như dữ liệu processed, nhưng `ingestion/chunking/heroSlides.py` đã bị xoá khỏi code hiện tại để giảm nhiễu retrieval.
 
 Chạy backend FastAPI:
 

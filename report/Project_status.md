@@ -19,22 +19,25 @@
 - 2026-07-27 17:13 +07 - Cập nhật `api/app.py` để lệnh `uv run python -m api.app` chạy Uvicorn với `reload=False` và bind `127.0.0.1`, tránh WatchFiles theo dõi toàn repo.
 - 2026-07-27 17:19 +07 - Đổi host trong `api/app.py` sang `localhost` để backend chạy tại `localhost:8000`.
 - 2026-07-29 10:28 +07 - Cập nhật mốc học: dự án chuyển sang nhánh `UpdateV2` và bắt đầu giai đoạn nâng cao theo nội dung giới thiệu trong `tai_lieu/p2/0.txt`.
+- 2026-07-29 20:56 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/2.txt`: hoàn thiện mô tả chunking nâng cao, loại bỏ `heroSlides.py` khỏi pipeline, sửa import `interiorStyles.py` trong pipeline và kiểm tra lại số chunk hiện tại.
 
 ## Mốc Học Hiện Tại
 
-Dự án hiện đã hoàn thành giai đoạn 1 sau buổi 7 và đã chuyển sang branch `UpdateV2` để bắt đầu giai đoạn nâng cao.
+Dự án hiện đã hoàn thành giai đoạn 1 sau buổi 7 và đang ở branch `UpdateV2` của giai đoạn nâng cao.
 
 `tai_lieu/p2/0.txt` là bài giới thiệu của giai đoạn nâng cao. Nội dung bài này mô tả mục tiêu cải tiến chatbot hiện tại để trả lời nhanh hơn, đầy đủ hơn và có trải nghiệm tốt hơn so với bản cơ bản sau giai đoạn 1. Các nhóm cải tiến được giới thiệu gồm cải tiến chunking, chia chunk lớn thành chunk nhỏ hơn, bổ sung hướng embedding nâng cao, xem xét lại vector store, cải tiến retrieval và hoàn thiện trải nghiệm chat.
 
-Tại thời điểm cập nhật này, các nội dung trong `tai_lieu/p2/0.txt` mới là định hướng của giai đoạn nâng cao, chưa phải trạng thái mã nguồn đã triển khai nếu code trong repo chưa thay đổi tương ứng.
+`tai_lieu/p2/2.txt` là bài hoàn thiện code chunking và đánh giá point dữ liệu. Nội dung bài tập trung vào việc làm gọn chunking, tách chunk theo ngữ nghĩa nhỏ hơn, dùng metadata nền, thêm `chunk_id`, `chunk_type`, `priority`, chia text dài bằng `split_paragraphs()` và bỏ `heroSlides` khỏi pipeline vì loại dữ liệu này dễ gây nhiễu retrieval.
 
-Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. Người dùng đã chạy thành công `uv run python -m ingestion.pipeline`, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
+Tại thời điểm cập nhật sau `p2/2`, phần chunking trong code đã có helper metadata, helper chia đoạn, nhiều loại chunk nhỏ cho `projects`, `news`, `companyInfo`, các danh mục, phong cách nội thất và loại kiến trúc. File `ingestion/chunking/heroSlides.py` đã bị xoá và `ingestion/pipeline.py` không còn gọi `chunk_hero_slides()`.
+
+Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
 Đây là dự án học Python RAG để xây dựng chatbot trả lời thông tin về công ty Nguyen Minh Khang Architects.
 
-Dữ liệu hiện tại mô tả thông tin công ty, hero slides, phong cách nội thất, loại kiến trúc, danh mục dự án, dự án, danh mục tin tức và tin tức.
+Dữ liệu hiện tại mô tả thông tin công ty, hero slides, phong cách nội thất, loại kiến trúc, danh mục dự án, dự án, danh mục tin tức và tin tức. Trong code chunking hiện tại, `heroSlides.json` vẫn tồn tại trong dữ liệu processed nhưng không còn được đưa vào pipeline tạo chunk.
 
 Dự án hiện đi theo hướng RAG, không phải fine-tuning. Dữ liệu được xử lý thành các chunk có thể truy xuất, sau đó dùng làm ngữ cảnh cho LLM khi trả lời câu hỏi.
 
@@ -48,7 +51,7 @@ Các thư mục chính hiện có:
 - `data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
 - `frontend`: chứa frontend Next.js, React, TypeScript và Tailwind CSS cho giao diện chat.
 - `ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
-- `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu.
+- `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu đang dùng; `heroSlides.py` đã bị xoá khỏi code chunking hiện tại.
 - `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
 - `embedding`: chứa mã load model embedding và tạo embedding theo batch.
 - `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point và upsert chunk vào Qdrant.
@@ -78,20 +81,21 @@ Các thư mục chính hiện có:
 
 `ingestion/load_data.py` đã có hàm `load_data()`. Hàm này đọc file JSON gốc trong `data/raw`, lấy object `tables`, bỏ qua các bảng rỗng và ghi từng bảng có dữ liệu ra `data/processed/<ten_bang>.json`.
 
-`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Sau buổi 5, người dùng đã chạy thành công file này bằng `uv run python -m ingestion.pipeline`; log ghi nhận đã upsert 450 chunks vào vector store.
+`ingestion/pipeline.py` đã có hàm `run_ingestion_pipeline()`. Hàm này gọi các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, gom `all_chunks`, rồi gọi `upsert_chunks(all_chunks)`. Sau `p2/2`, pipeline không còn import hoặc gọi `heroSlides.py`. Import trong pipeline đã được kiểm tra lại bằng `uv run` và hiện import được.
 
 `ingestion/chunking` hiện có các module chunking cho nhiều bảng dữ liệu đã xử lý:
 
 - `architectureTypes.py`: tạo chunk cho loại kiến trúc từ `architectureTypes.json`.
 - `companyInfo.py`: tạo chunk tổng quan, mô tả và thông tin liên hệ công ty từ `companyInfo.json`.
-- `heroSlides.py`: tạo chunk cho hero slide từ `heroSlides.json`.
 - `interiorStyles.py`: tạo chunk cho phong cách nội thất từ `interiorStyles.json`.
 - `newCategories.py`: tạo chunk cho danh mục tin tức từ `newsCategories.json`.
 - `news.py`: chuyển HTML tin tức sang text, chia nội dung thành đoạn và tạo chunk từ `news.json`.
 - `projectCategories.py`: tạo chunk cho danh mục dự án từ `projectCategories.json`.
 - `projects.py`: tạo nhiều loại chunk cho dự án từ `projects.json`, gồm overview, description, style, context, specs và media.
 
-`ingestion/helpers/make_metadata.py` hiện có hàm `make_metadata()` để thêm `chunk_id` UUID và merge metadata. `ingestion/helpers/split_paragraphs.py` hiện có hàm `split_paragraphs()` để chia text dài thành các đoạn nhỏ.
+`ingestion/chunking/heroSlides.py` không còn tồn tại. Theo nội dung `tai_lieu/p2/2.txt`, hero slides bị loại khỏi pipeline vì có thể trộn lẫn nội dung trang chủ, dự án, tin tức và các phần trình bày khác, làm nhiễu retrieval nếu không xử lý riêng.
+
+`ingestion/helpers/make_metadata.py` hiện có hàm `make_metadata()` để thêm `chunk_id` UUID và merge metadata. `ingestion/helpers/split_paragraphs.py` hiện có hàm `split_paragraphs()` để chia text dài thành các đoạn nhỏ. `ingestion/helpers/__init__.py` đang rỗng và chỉ đóng vai trò package marker.
 
 `embedding/embedder.py` đã có hàm `get_model()` và `embed_texts()`. File này load `SentenceTransformer` theo cấu hình `embedding.model`, cache model trong biến module `_model`, tạo embedding đã normalize và trả về dạng list để lưu vào vector store.
 
@@ -132,6 +136,7 @@ Các file sau hiện tồn tại nhưng đang rỗng:
 - `embedding/__init__.py`
 - `ingestion/__init__.py`
 - `ingestion/chunking/__init__.py`
+- `ingestion/helpers/__init__.py`
 - `llm/__init__.py`
 - `retrieval/__init__.py`
 - `vectorstore/__init__.py`
@@ -157,7 +162,28 @@ Kết quả chạy thực tế đã ghi nhận:
 
 Trong quá trình chạy có nhiều warning `Empty text provided to split_paragraphs`, phản ánh một số bản ghi thiếu nội dung text để chia đoạn. Các warning này không chặn pipeline; luồng ingestion vẫn hoàn tất.
 
-Sau khi thêm code buổi 7, kiểm tra tĩnh hiện tại đã chạy thành công:
+Sau khi cập nhật code chunking theo `p2/2`, kiểm tra import tối thiểu đã chạy thành công:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('ingestion.pipeline'); print('ingestion.pipeline import ok')"
+```
+
+Kết quả: `ingestion.pipeline import ok`.
+
+Kiểm tra số chunk hiện tại bằng cách gọi trực tiếp các hàm chunking, không upsert Qdrant, cho kết quả:
+
+- `architectureTypes`: 0 chunk
+- `companyInfo`: 3 chunks
+- `interiorStyles`: 10 chunks
+- `newsCategories`: 4 chunks
+- `news`: 163 chunks
+- `projectCategories`: 12 chunks
+- `projects`: 258 chunks
+- Tổng cộng: 450 chunks
+
+Trong lần kiểm tra số chunk này vẫn có warning `Empty text provided to split_paragraphs` do một số bản ghi có trường text rỗng hoặc thiếu nội dung để chia đoạn. Warning không làm các hàm chunking dừng.
+
+Sau khi thêm code buổi 7, kiểm tra tĩnh đã từng chạy thành công:
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile api/app.py api/health.py api/routes/chat.py retrieval/retriever.py llm/generator.py core/schema.py
@@ -216,7 +242,7 @@ Các file đã được tách trong `data/processed`:
 - `projectCategories.json`
 - `projects.json`
 
-Qdrant local hiện có dữ liệu được lưu trong `qdrant_storage/` do Docker Compose mount từ `./qdrant_storage` vào `/qdrant/storage` trong container. Collection `nmk_chatbot_collection` đã nhận 450 points theo log chạy pipeline sau buổi 5.
+Qdrant local hiện có dữ liệu được lưu trong `qdrant_storage/` do Docker Compose mount từ `./qdrant_storage` vào `/qdrant/storage` trong container. Collection `nmk_chatbot_collection` đã nhận 450 points theo log chạy pipeline sau buổi 5. Sau cập nhật `p2/2`, code chunking đã đổi thành phần chunk nhưng chưa chạy lại ingestion để thay thế dữ liệu trong Qdrant trong phiên kiểm tra này.
 
 ## Quyết Định Kỹ Thuật Hiện Tại
 
@@ -224,7 +250,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 51 file, 357 nodes, 552 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 51 file, 350 nodes, 543 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -250,7 +276,7 @@ Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` tr
 
 Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng bảng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Phần retrieval, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Phần retrieval, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
 
 Backend chạy bằng:
 

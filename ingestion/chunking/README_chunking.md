@@ -9,6 +9,7 @@
 - 2026-07-24 21:39 +07 - Chuẩn hóa phần mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-24 22:06 +07 - Cập nhật theo trạng thái hiện tại: bổ sung `newCategories.py`, `projectCategories.py`, `projects.py` và ghi nhận helper metadata/split đoạn văn.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file chunking.
+- 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: xoá mô tả `heroSlides.py`, ghi nhận pipeline không còn dùng hero slides và bổ sung trạng thái chunk count hiện tại.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -18,12 +19,13 @@ Tính tới thời điểm hiện tại, thư mục này có mã chunking cho c�
 
 - `architectureTypes.json`
 - `companyInfo.json`
-- `heroSlides.json`
 - `interiorStyles.json`
 - `newsCategories.json`
 - `news.json`
 - `projectCategories.json`
 - `projects.json`
+
+File `data/processed/heroSlides.json` vẫn tồn tại trong dữ liệu processed, nhưng thư mục này không còn file `heroSlides.py` và pipeline không còn tạo chunk từ hero slides.
 
 Các file chunking dùng chung cấu hình từ `core.settings_loader.load_settings()` và logger tên `ingestion`.
 
@@ -88,6 +90,7 @@ Vai trò và luồng hoạt động:
 - Hàm chỉ tạo chunk khi có cả `name` và `description`.
 - Metadata được tạo qua `make_metadata(...)` với `chunk_type="definition"` và `priority=3`.
 - Output là `list[dict]`, mỗi phần tử có `text` và `metadata`.
+- Trạng thái dữ liệu hiện tại: với `data/processed/architectureTypes.json` đang có trong repo, hàm hiện tạo 0 chunk vì các bản ghi thiếu `description` theo điều kiện trong code.
 
 ### `companyInfo.py`
 
@@ -114,31 +117,6 @@ Vai trò và luồng hoạt động:
 - Phần mạng xã hội được chuyển từ dictionary sang text dạng `key: value` trước khi đưa vào chunk liên hệ.
 - Output là list chunk đã có metadata chung `type="company_info"` và metadata riêng theo từng `chunk_type`.
 
-### `heroSlides.py`
-
-File này đã có mã nguồn.
-
-Nội dung hiện tại:
-
-- Đọc `data/processed/heroSlides.json`.
-- Kiểm tra file tồn tại.
-- Đọc JSON bằng UTF-8.
-- Chuyển dữ liệu dạng dictionary thành list nếu cần.
-- Kiểm tra dữ liệu có phải list không.
-- Bỏ qua slide không phải dictionary.
-- Bỏ qua slide thiếu `title`, `subtitle` hoặc `description`.
-- Tạo text tiếng Việt từ `title`, `subtitle` và `description`.
-- Tạo metadata trực tiếp gồm `type`, `source`, `slide_index`, `title`, `subtitle`, `description`, `image_url`.
-- Trả về danh sách chunk hợp lệ.
-
-Vai trò và luồng hoạt động:
-
-- `heroSlides.py` chịu trách nhiệm chuyển nội dung hero slide thành chunk giới thiệu các thông điệp nổi bật của website/công ty.
-- `chunk_hero_slides()` đọc `heroSlides.json`, bỏ qua slide không phải dictionary hoặc thiếu `title`, `subtitle`, `description`.
-- Text chunk được ghép từ title, subtitle và description của từng slide.
-- File này tạo metadata trực tiếp, không gọi `make_metadata()`, nên metadata hiện không có `chunk_id` UUID như nhiều file chunking khác.
-- Output là list chunk hợp lệ cho các slide đủ dữ liệu.
-
 ### `interiorStyles.py`
 
 File này đã có mã nguồn.
@@ -164,6 +142,7 @@ Vai trò và luồng hoạt động:
 - Hàm hiện chỉ tạo chunk khi có cả `name` và `imageUrl`.
 - Metadata được tạo qua `make_metadata(...)` với `chunk_type="definition"` và `priority=3`.
 - Output là list chunk về phong cách nội thất, trong đó text hiện mô tả tên phong cách và URL hình ảnh minh họa.
+- Trạng thái dữ liệu hiện tại: hàm tạo 10 chunk từ `interiorStyles.json`.
 
 ### `news.py`
 
@@ -193,6 +172,7 @@ Vai trò và luồng hoạt động:
 - `chunk_news()` đọc `news.json`, lấy title, slug, excerpt và content, chuyển content HTML sang text rồi gọi `split_paragraphs(...)`.
 - File tạo chunk `overview` từ title và excerpt nếu có, sau đó tạo các chunk `full_content` cho từng đoạn nội dung.
 - Output là list chunk tin tức; mỗi chunk nội dung có metadata từ `make_metadata(...)`, còn `part_index` hiện được đặt ở cấp chunk dictionary cho full content.
+- Trạng thái dữ liệu hiện tại: hàm tạo 163 chunk từ `news.json`.
 
 ### `newCategories.py`
 
@@ -222,6 +202,7 @@ Vai trò và luồng hoạt động:
 - Text chunk mô tả tên danh mục và mục đích phân loại bài viết theo danh mục đó.
 - Metadata được tạo qua `make_metadata(...)` với `type="news_category"`, `chunk_type="definition"` và `priority=3`.
 - Output là list chunk danh mục tin tức. Tên file hiện là `newCategories.py`, khác một chữ so với tên dữ liệu `newsCategories.json`.
+- Trạng thái dữ liệu hiện tại: hàm tạo 4 chunk từ `newsCategories.json`.
 
 ### `projectCategories.py`
 
@@ -249,6 +230,7 @@ Vai trò và luồng hoạt động:
 - Text chunk mô tả tên danh mục và vai trò phân loại các dự án liên quan.
 - Metadata được tạo qua `make_metadata(...)` với `type="project_category"`, `chunk_type="definition"` và `priority=3`.
 - Output là list chunk danh mục dự án.
+- Trạng thái dữ liệu hiện tại: hàm tạo 12 chunk từ `projectCategories.json`.
 
 ### `projects.py`
 
@@ -280,6 +262,13 @@ Vai trò và luồng hoạt động:
 - File tạo chunk `overview` cho tên dự án, chunk `description` từ từng đoạn mô tả sau `split_paragraphs(...)`, chunk `style` cho danh mục/phong cách, chunk `context` cho địa điểm/chủ đầu tư, chunk `specs` cho diện tích/thời gian và chunk `media` cho ảnh minh họa.
 - Metadata được tạo qua `make_metadata(...)`, giúp mỗi chunk có `chunk_id`, `chunk_type`, `priority` và các field bổ sung phù hợp.
 - Output là list chunk dự án, thường nhiều chunk trên một project để retrieval có thể bắt được nhiều kiểu câu hỏi.
+- Trạng thái dữ liệu hiện tại: hàm tạo 258 chunk từ `projects.json`.
+
+### `__init__.py`
+
+File này hiện đang rỗng.
+
+File đánh dấu `ingestion/chunking` là Python package.
 
 ## Cách Hoạt Động Hiện Tại
 
@@ -288,7 +277,6 @@ Các file trong thư mục này hiện đọc dữ liệu từ:
 ```text
 data/processed/architectureTypes.json
 data/processed/companyInfo.json
-data/processed/heroSlides.json
 data/processed/interiorStyles.json
 data/processed/newsCategories.json
 data/processed/news.json
@@ -301,16 +289,18 @@ Kết quả trả về của hàm là list các dictionary. Mỗi dictionary có
 - `text`
 - `metadata`
 
+Kiểm tra hiện tại bằng cách gọi trực tiếp các hàm chunking, chưa upsert Qdrant, tạo tổng cộng 450 chunks.
+
 ## Ghi Chú Kỹ Thuật
 
 Nhiều file chunking đang dùng `ingestion.helpers.make_metadata`. Helper này hiện tồn tại tại `ingestion/helpers/make_metadata.py` và có nhiệm vụ merge metadata gốc với metadata bổ sung, đồng thời thêm `chunk_id` dạng UUID.
 
 `news.py` và `projects.py` đang dùng `ingestion.helpers.split_paragraphs`. Helper này hiện tồn tại tại `ingestion/helpers/split_paragraphs.py` và có nhiệm vụ chia text dài thành các đoạn nhỏ theo giới hạn độ dài.
 
-Trong dữ liệu mẫu đã kiểm tra, nhiều bản ghi `architectureTypes.json` có `description` là `null`. Mã hiện tại chỉ tạo chunk khi có cả `name` và `description`.
+Trong dữ liệu processed hiện tại, nhiều bản ghi `architectureTypes.json` có `description` là `null`. Mã hiện tại chỉ tạo chunk khi có cả `name` và `description`, nên `chunk_architecture_types()` hiện trả về 0 chunk.
 
 Timestamp `created_at` trong metadata được tạo bằng `datetime.utcnow().isoformat()`.
 
-`heroSlides.py` không dùng `make_metadata`; file này tạo metadata trực tiếp theo ảnh tham khảo trong `tai_lieu/anh1.png`, `tai_lieu/anh2.png` và `tai_lieu/anh3.png`.
+`heroSlides.py` đã bị xoá khỏi thư mục này sau `tai_lieu/p2/2.txt`. Lý do theo bài học là hero slides có thể trộn nội dung trang chủ, dự án và tin tức, làm nhiễu retrieval nếu đưa thẳng vào vector store.
 
 Các file bytecode trong `ingestion/chunking/__pycache__` là file sinh tự động khi chạy Python, không phải mã nguồn cần bảo trì trực tiếp.

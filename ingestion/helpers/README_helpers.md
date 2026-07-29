@@ -4,6 +4,7 @@
 
 - 2026-07-25 18:42 +07 - Tạo README cho thư mục `ingestion/helpers` sau khi kiểm tra mã nguồn hiện tại.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các helper mã nguồn.
+- 2026-07-29 20:56 +07 - Bổ sung trạng thái `__init__.py` đang rỗng và xác nhận helper đang được các module chunking sau `p2/2` dùng chung.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -52,3 +53,9 @@ Vai trò và luồng hoạt động:
 - `split_paragraphs(text, max_len=400)` nhận một chuỗi text và giới hạn độ dài đoạn.
 - Hàm tách text theo câu, ghép câu vào buffer nếu còn trong giới hạn, và cắt câu quá dài theo `max_len` khi không tìm được dấu ngắt phù hợp.
 - Output là list các đoạn text, đang được dùng bởi `news.py` và `projects.py`.
+
+### `__init__.py`
+
+File này hiện đang rỗng.
+
+File đánh dấu `ingestion/helpers` là Python package.

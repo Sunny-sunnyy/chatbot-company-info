@@ -10,6 +10,7 @@
 - 2026-07-25 18:42 +07 - Cập nhật trạng thái sau buổi 4: `vectorstore` đã có code nhưng pipeline vẫn chưa chạy được end-to-end.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn trong thư mục `ingestion`.
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: pipeline đã chạy thành công bằng `uv run python -m ingestion.pipeline` và upsert 450 chunks vào Qdrant.
+- 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline không còn gọi hero slides, sửa import `interiorStyles.py` và kiểm tra số chunk hiện tại trước upsert.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -77,7 +78,7 @@ Nội dung hiện tại:
 - Định nghĩa hàm `run_ingestion_pipeline()`.
 - Nếu chạy trực tiếp file này, gọi `run_ingestion_pipeline()`.
 
-Hàm `run_ingestion_pipeline()` hiện tạo list `all_chunks`, gọi các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, sau đó gọi `upsert_chunks(all_chunks)` nếu có chunk.
+Hàm `run_ingestion_pipeline()` hiện tạo list `all_chunks`, gọi các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, sau đó gọi `upsert_chunks(all_chunks)` nếu có chunk. Pipeline hiện không còn gọi `chunk_hero_slides()`.
 
 Trạng thái hiện tại của file này đã được người dùng chạy thành công bằng:
 
@@ -85,16 +86,23 @@ Trạng thái hiện tại của file này đã được người dùng chạy t
 uv run python -m ingestion.pipeline
 ```
 
-Log chạy thực tế ghi nhận pipeline đã upsert 450 chunks vào vector store.
+Log chạy thực tế sau buổi 5 ghi nhận pipeline đã upsert 450 chunks vào vector store. Sau cập nhật `p2/2`, phiên kiểm tra tài liệu này chỉ kiểm tra import pipeline và số chunk từ các hàm chunking, chưa chạy lại upsert Qdrant.
 
 Vai trò và luồng hoạt động:
 
 - `pipeline.py` chịu trách nhiệm điều phối luồng ingestion từ các hàm chunking sang bước upsert vào vector store.
 - `setup_logging()` được gọi ở cấp module để kích hoạt cấu hình logging trước khi pipeline chạy.
 - `run_ingestion_pipeline()` tạo `all_chunks`, gọi lần lượt các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, rồi gom toàn bộ chunk vào một list.
+- File này đã bỏ import và bỏ gọi chunking hero slides.
 - Nếu `all_chunks` rỗng, pipeline log warning và dừng.
 - Nếu có chunk, pipeline gọi `upsert_chunks(all_chunks)` để chuyển dữ liệu sang vector store.
-- Trạng thái chạy hiện tại: pipeline đã chạy end-to-end với Qdrant local và upsert 450 chunks thành công theo log người dùng cung cấp sau buổi 5.
+- Trạng thái kiểm tra hiện tại: `ingestion.pipeline` import được bằng `uv run`. Lệnh gọi trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert. Pipeline chưa được chạy lại để upsert bộ chunk sau `p2/2` trong phiên kiểm tra này.
+
+### `__init__.py`
+
+File này hiện đang rỗng.
+
+File đánh dấu `ingestion` là Python package.
 
 ## Thư Mục Con Hiện Có
 
@@ -106,7 +114,6 @@ Hiện tại trong thư mục `chunking` có các file mã nguồn:
 
 - `architectureTypes.py`
 - `companyInfo.py`
-- `heroSlides.py`
 - `interiorStyles.py`
 - `newCategories.py`
 - `news.py`
@@ -122,6 +129,7 @@ Thư mục con này chứa helper dùng chung cho chunking.
 Hiện tại trong thư mục `helpers` có các file mã nguồn:
 
 - `README_helpers.md`
+- `__init__.py`
 - `make_metadata.py`
 - `split_paragraphs.py`
 
@@ -135,7 +143,7 @@ Luồng ingestion đã có ở mức mã nguồn:
 2. `load_data.py` lấy object `tables`.
 3. `load_data.py` bỏ qua bảng rỗng.
 4. `load_data.py` ghi từng bảng có dữ liệu sang `data/processed`.
-5. Các file trong `ingestion/chunking` đọc dữ liệu từ `data/processed` và trả về list chunk.
+5. Các file trong `ingestion/chunking` đọc dữ liệu từ `data/processed` và trả về list chunk. Sau `p2/2`, `heroSlides.json` không còn có module chunking tương ứng và không còn được đưa vào pipeline.
 6. `pipeline.py` gom chunk từ nhiều hàm chunking.
 7. `pipeline.py` gọi `upsert_chunks`.
 8. `vectorstore/upsert.py` đảm bảo collection Qdrant tồn tại, build dense-only point và upsert point vào Qdrant.
@@ -149,6 +157,19 @@ Sau buổi 5, luồng này đã chạy thành công với Qdrant local. Log ch�
 - 450 chunks được upsert vào vector store.
 
 Trong lúc chạy có warning `Empty text provided to split_paragraphs` cho một số bản ghi thiếu text để chia đoạn. Warning này không làm pipeline dừng.
+
+Sau cập nhật `p2/2`, kiểm tra không upsert bằng cách gọi trực tiếp các hàm chunking cho kết quả:
+
+- `architectureTypes`: 0 chunk
+- `companyInfo`: 3 chunks
+- `interiorStyles`: 10 chunks
+- `newsCategories`: 4 chunks
+- `news`: 163 chunks
+- `projectCategories`: 12 chunks
+- `projects`: 258 chunks
+- Tổng cộng: 450 chunks
+
+Trong kiểm tra này vẫn có warning `Empty text provided to split_paragraphs`, nhưng các hàm chunking vẫn trả kết quả.
 
 ## Ghi Chú Kỹ Thuật
 
