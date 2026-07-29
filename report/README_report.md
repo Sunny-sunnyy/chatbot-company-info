@@ -16,6 +16,7 @@
 - 2026-07-27 16:03 +07 - Cập nhật mô tả `Project_status.md` sau khi thêm luồng OpenRouter isolated path, frontend gọi endpoint mới và automated tests liên quan.
 - 2026-07-27 17:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xử lý lỗi `final_output` rỗng bằng cách tắt OpenRouter reasoning.
 - 2026-07-27 17:13 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` chuyển sang chạy Uvicorn không reload khi dùng `uv run python -m api.app`.
+- 2026-07-29 10:28 +07 - Cập nhật mô tả `Project_status.md` và `Agent_session_prompt.md` sau khi bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo `tai_lieu/p2/0.txt`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -49,6 +50,7 @@ Nội dung hiện có:
 - Trạng thái tắt OpenRouter reasoning trong `llm/generator_openai.py`.
 - Trạng thái `uv run python -m api.app` không còn bật Uvicorn reload.
 - Chuẩn README hiện tại cho các folder có file Python thật.
+- Mốc bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo bài giới thiệu `tai_lieu/p2/0.txt`, đồng thời phân biệt rõ nội dung định hướng với trạng thái code đã triển khai.
 
 ### `README_report.md`
 
@@ -59,6 +61,8 @@ File này mô tả chính thư mục `report` và trạng thái hiện tại c�
 File này chứa prompt có thể copy sang coding agent trong session mới.
 
 Nội dung file hướng dẫn agent đọc đúng tài liệu ngữ cảnh, đọc transcript đúng buổi học được yêu cầu, đối chiếu code với README theo folder, cập nhật `Project_status.md`, cập nhật README khi lệch trạng thái thật, không bịa đặt chức năng chưa có trong mã nguồn, giải thích vai trò/hàm/luồng chính của file mã nguồn đã có code, ghi rõ file rỗng là chưa phát triển, và sử dụng CodeGraph đúng cách khi cần hiểu flow hoặc quan hệ symbol trong code.
+
+File này hiện cũng ghi rõ cách đọc transcript giai đoạn nâng cao trong `tai_lieu/p2/<so_buoi>.txt` khi người dùng yêu cầu.
 
 ## Cách Hoạt Động Hiện Tại
 

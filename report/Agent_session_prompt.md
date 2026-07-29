@@ -7,6 +7,7 @@
 - 2026-07-24 21:39 +07 - Làm rõ README phải có phần riêng mô tả nhiệm vụ các file mã nguồn.
 - 2026-07-25 17:37 +07 - Bổ sung hướng dẫn sử dụng CodeGraph, kiểm tra đồng bộ index và ví dụ truy vấn cho coding agent.
 - 2026-07-25 20:22 +07 - Bổ sung quy tắc README phải giải thích vai trò, hàm/luồng chính và trạng thái chạy của từng file mã nguồn đã có code.
+- 2026-07-29 10:28 +07 - Bổ sung quy tắc đọc transcript giai đoạn nâng cao trong `tai_lieu/p2/<so_buoi>.txt`.
 
 ## Nội Dung Prompt Để Copy Sang Session Mới
 
@@ -49,6 +50,8 @@ Hãy đọc theo thứ tự này trước khi kết luận hoặc chỉnh sửa:
 6. Nếu cần đối chiếu trạng thái sau nhiều buổi, đọc các transcript từ buổi đã được yêu cầu, không tự đọc trước các buổi chưa học hoặc chưa được yêu cầu.
 7. Đọc code thật trong các folder liên quan để xác minh README có đúng không.
 8. Nếu task là audit toàn dự án, đọc toàn bộ README theo folder và các file code tương ứng.
+
+Nếu người dùng nói tới giai đoạn nâng cao, phần 2 hoặc `p2`, transcript tương ứng nằm trong `tai_lieu/p2/<so_buoi>.txt`. Ví dụ bài giới thiệu giai đoạn nâng cao là `tai_lieu/p2/0.txt`.
 
 ## Quy Tắc Sử Dụng CodeGraph
 
@@ -186,6 +189,8 @@ Khi cập nhật README:
 - Chỉ đọc transcript của buổi tôi yêu cầu.
 - Không tự đọc các buổi sau buổi học hiện tại.
 - Nếu tôi nói "sau buổi 3", chỉ dùng `tai_lieu/3.txt` cùng với trạng thái repo hiện tại.
+- Nếu tôi nói "p2 bài 0", "giai đoạn nâng cao bài 0" hoặc yêu cầu tương đương, chỉ dùng `tai_lieu/p2/0.txt` cùng với trạng thái repo hiện tại.
+- Với các buổi thuộc giai đoạn nâng cao, dùng đúng file `tai_lieu/p2/<so_buoi>.txt`; không tự đọc các file p2 sau buổi được yêu cầu.
 - Nếu cần hiểu nền tảng, có thể đọc lại `tai_lieu/1.txt` và `tai_lieu/2.txt`, nhưng không dùng chúng để ghi rằng code mới đã có nếu repo không có code đó.
 - Transcript giúp hiểu ý định bài học, còn code trong repo là nguồn sự thật cho trạng thái đã triển khai.
 
