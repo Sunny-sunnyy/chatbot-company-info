@@ -5,12 +5,13 @@
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra dữ liệu hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-30 10:54 +07 - Bổ sung mô tả file `database_export_2026-01-23T02-02-46.json`, xác nhận hai file raw giống nhau theo checksum và ghi rõ code hiện tại vẫn đọc file ngày `2026-01-14`.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `data/raw` chứa dữ liệu gốc chưa tách bảng.
 
-Tính tới thời điểm hiện tại, đây là nơi lưu file JSON export ban đầu để `ingestion/load_data.py` đọc vào.
+Tính tới thời điểm hiện tại, đây là nơi lưu các file JSON export ban đầu để `ingestion/load_data.py` đọc vào.
 
 ## File Hiện Có
 
@@ -20,7 +21,7 @@ File này mô tả nhiệm vụ của thư mục `data/raw` và nhiệm vụ hi�
 
 ### `database_export_2026-01-14T02-32-14.json`
 
-Đây là file JSON gốc hiện tại.
+Đây là một file JSON gốc hiện có trong thư mục.
 
 Cấu trúc cấp cao quan sát được:
 
@@ -41,6 +42,37 @@ Các bảng trong `tables`:
 - `news`: 17 bản ghi
 - `users`: 0 bản ghi
 
+### `database_export_2026-01-23T02-02-46.json`
+
+Đây là file JSON gốc hiện có trong thư mục.
+
+Cấu trúc cấp cao quan sát được:
+
+- `exportDate`: thời gian export dữ liệu.
+- `database`: loại database nguồn, hiện là `postgres`.
+- `tables`: object chứa dữ liệu theo từng bảng.
+
+Các bảng trong `tables`:
+
+- `settings`: 0 bản ghi
+- `companyInfo`: 1 bản ghi
+- `heroSlides`: 10 bản ghi
+- `interiorStyles`: 10 bản ghi
+- `architectureTypes`: 15 bản ghi
+- `projectCategories`: 12 bản ghi
+- `projects`: 49 bản ghi
+- `newsCategories`: 4 bản ghi
+- `news`: 17 bản ghi
+- `users`: 0 bản ghi
+
+Hai file raw `database_export_2026-01-14T02-32-14.json` và `database_export_2026-01-23T02-02-46.json` đã được kiểm tra bằng `sha256sum` và có checksum giống hệt nhau:
+
+```text
+b38e8cf04a2e392733037e89fafffaeab0f6ecfc49253965105278a4a007c598
+```
+
+Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`.
+
 ## Cách Hoạt Động Hiện Tại
 
 `ingestion/load_data.py` đang đọc trực tiếp file:
@@ -50,6 +82,8 @@ data/raw/database_export_2026-01-14T02-32-14.json
 ```
 
 Mã nguồn lấy dữ liệu từ object `tables` trong file này và ghi các bảng không rỗng sang `data/processed`.
+
+Trạng thái code hiện tại: chưa có thay đổi code để chuyển `ingestion/load_data.py` sang đọc file ngày `2026-01-23`.
 
 ## Ghi Chú Kỹ Thuật
 

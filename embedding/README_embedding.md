@@ -9,14 +9,17 @@
 - 2026-07-25 17:23 +07 - Cập nhật theo mã nguồn hiện tại: `embedder.py` và `batch_embed.py` đã có code, các file cũ `embed_texts.py` và `batch_embed_texts.py` không còn trong thư mục.
 - 2026-07-25 18:42 +07 - Đối chiếu với nội dung buổi 4 và xác nhận mã embedding hiện có khớp phần load model, encode text và batch embedding.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn embedding.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung `sparse_embedder.py`, ghi rõ sparse embedding chưa được nối vào vector store/retrieval và bổ sung trạng thái `__init__.py`.
 
 ## Nhiệm Vụ Của Thư Mục
 
-Thư mục `embedding` chứa mã tạo vector embedding từ text.
+Thư mục `embedding` chứa mã tạo embedding từ text.
 
-Tính tới thời điểm hiện tại, thư mục này có code load model `SentenceTransformer`, tạo embedding cho danh sách text và xử lý embedding theo batch.
+Tính tới thời điểm hiện tại, thư mục này có code load model `SentenceTransformer`, tạo dense embedding cho danh sách text, xử lý dense embedding theo batch và file sparse embedder dựa trên token/TF-IDF.
 
-Nội dung này khớp với phần embedding trong `tai_lieu/4.txt`: load model một lần, dùng device từ settings, encode text thành vector và xử lý danh sách text theo batch.
+Nội dung dense embedding khớp với phần embedding trong `tai_lieu/4.txt`: load model một lần, dùng device từ settings, encode text thành vector và xử lý danh sách text theo batch.
+
+Nội dung sparse embedding khớp với `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: phân tích vì sao dense embedding có thể bỏ lỡ keyword quan trọng, sau đó code sparse embedder với token, vocabulary, document frequency, term frequency và inverse document frequency.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -73,3 +76,36 @@ Vai trò và luồng hoạt động:
 - `batch_embed_texts(texts)` duyệt danh sách text theo bước nhảy `BATCH_SIZE`, gọi `embed_texts(batch)` cho từng batch, rồi nối kết quả vào `all_embeddings`.
 - Input chính là `list[str]`.
 - Output chính là `list[list[float]]` đã giữ đúng thứ tự tương ứng với danh sách text đầu vào.
+
+### `sparse_embedder.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Import `math`, `logging`, `re` và `Counter`.
+- Tạo logger tên `embedding`.
+- Định nghĩa hàm `tokenize(text: str) -> list[str]`.
+- Định nghĩa class `SparseEmbedder`.
+- `SparseEmbedder.__init__()` khởi tạo `vocabulary`, `document_frequency` và `num_documents`.
+- `SparseEmbedder.__update_vocabulary(tokens)` cập nhật vocabulary và document frequency từ token duy nhất trong từng document.
+- `SparseEmbedder.fit(texts)` fit sparse embedder trên danh sách text.
+- `SparseEmbedder.__inverse_document_frequency(term)` tính IDF bằng công thức `log((num_documents + 1) / (document_frequency + 1)) + 1`.
+- `SparseEmbedder.encode(text)` encode một text thành sparse vector.
+- `SparseEmbedder.encode_batch(texts)` encode danh sách text bằng cách gọi `encode()` cho từng text.
+
+Vai trò và luồng hoạt động:
+
+- `sparse_embedder.py` chịu trách nhiệm tạo biểu diễn sparse để giữ keyword quan trọng song song với dense embedding.
+- `tokenize(text)` chuyển text về chữ thường, thay ký tự đặc biệt bằng khoảng trắng qua regex, rồi tách token bằng `split()`.
+- `fit(texts)` nhận `list[str]`, token hóa từng text, cập nhật `vocabulary` dạng `token -> id`, cập nhật `document_frequency` bằng `set(tokens)` để mỗi token chỉ tính một lần trên mỗi document, và lưu `num_documents`.
+- `encode(text)` nhận một chuỗi text, token hóa, tính term frequency bằng `Counter`, bỏ qua token chưa có trong vocabulary, rồi trả dictionary gồm `indices` và `values`.
+- Output của `encode(text)` có dạng `{"indices": list[int], "values": list[float]}`.
+- `encode_batch(texts)` trả `list[dict[str, list[float]]]`, mỗi phần tử tương ứng với một text đầu vào.
+- Trạng thái chạy hiện tại: file tồn tại và được CodeGraph index, nhưng chưa có automated test riêng, chưa được import bởi `vectorstore/index.py`, chưa được lưu vào Qdrant và chưa được dùng trong `retrieval/retriever.py`. Luồng ingestion/retrieval hiện tại vẫn dùng dense embedding.
+
+### `__init__.py`
+
+File này hiện đang rỗng.
+
+File đánh dấu `embedding` là Python package.

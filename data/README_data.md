@@ -5,6 +5,7 @@
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra dữ liệu hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái dữ liệu raw: bổ sung file export ngày `2026-01-23`, xác nhận hai file raw giống nhau theo checksum và ghi chú `heroSlides.json` không còn dùng trong pipeline.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -30,8 +31,11 @@ Thư mục `data/raw` chứa file JSON gốc.
 File hiện có:
 
 - `database_export_2026-01-14T02-32-14.json`
+- `database_export_2026-01-23T02-02-46.json`
 
-File này là đầu vào của `ingestion/load_data.py`.
+Hai file này hiện có nội dung giống hệt nhau theo kiểm tra `sha256sum`. Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng `database_export_2026-01-23T02-02-46.json`.
+
+Trạng thái code hiện tại: `ingestion/load_data.py` vẫn đang đọc trực tiếp file `database_export_2026-01-14T02-32-14.json`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
 
 ### `processed`
 
@@ -48,7 +52,7 @@ Các file hiện có:
 - `projectCategories.json`
 - `projects.json`
 
-Các file này được tạo từ các bảng không rỗng trong file JSON gốc.
+Các file này được tạo từ các bảng không rỗng trong file JSON gốc. `heroSlides.json` vẫn tồn tại trong `data/processed`, nhưng không còn được dùng bởi code chunking hoặc `ingestion/pipeline.py`.
 
 ## Cách Hoạt Động Hiện Tại
 
@@ -61,7 +65,7 @@ Luồng xử lý dữ liệu hiện tại:
 
 ## Trạng Thái Dữ Liệu Hiện Tại
 
-File JSON gốc có 10 bảng:
+Mỗi file JSON gốc hiện có 10 bảng:
 
 - `settings`: 0 bản ghi
 - `companyInfo`: 1 bản ghi

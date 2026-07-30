@@ -9,12 +9,13 @@
 - 2026-07-25 18:42 +07 - Cập nhật theo mã nguồn hiện tại sau buổi 4: `qdrant.py`, `index.py` và `upsert.py` đã có code, nhưng luồng import/upsert hiện chưa chạy được nguyên vẹn.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn vector store.
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: `qdrant.py` và `upsert.py` chuyển về dense-only, pipeline đã upsert 450 chunks vào Qdrant theo kết quả chạy thực tế của người dùng.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có `embedding/sparse_embedder.py`, nhưng vector store hiện vẫn dense-only; bổ sung trạng thái `hybrid_index.py` đang rỗng.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `vectorstore` chứa mã kết nối Qdrant, đảm bảo collection tồn tại, chuyển chunk thành Qdrant point và upsert point vào vector store.
 
-Tính tới thời điểm kiểm tra này, luồng vector store hiện đang dùng dense vector đơn thuần, chưa dùng hybrid search hoặc sparse vector.
+Tính tới thời điểm kiểm tra này, luồng vector store hiện đang dùng dense vector đơn thuần, chưa dùng hybrid search hoặc sparse vector. Repo đã có `embedding/sparse_embedder.py`, nhưng file này chưa được import hoặc dùng trong các file mã nguồn đang chạy của thư mục `vectorstore`.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -102,7 +103,13 @@ Vai trò và luồng hoạt động:
 - Nếu có point, hàm gọi `client.upsert(collection_name=COLLECTION_NAME, points=points)`.
 - Input chính là list chunk có key `text` và `metadata`.
 - Output trực tiếp của hàm không trả về dữ liệu khi upsert thành công; trạng thái được ghi qua log.
-- Trạng thái hiện tại không còn import `vectorstore.hybrid_index` hoặc `embedding.sparse_embedder`.
+- Trạng thái hiện tại: file này không import `vectorstore.hybrid_index` hoặc `embedding.sparse_embedder`; sparse embedding chưa được build thành Qdrant point.
+
+### `hybrid_index.py`
+
+File này hiện đang rỗng và chưa được phát triển.
+
+File chưa có import, hàm, class hoặc luồng xử lý. Không có code nào trong thư mục `vectorstore` đang gọi file này.
 
 ## Trạng Thái Chạy Hiện Tại
 

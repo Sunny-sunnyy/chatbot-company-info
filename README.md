@@ -13,12 +13,15 @@
 - 2026-07-27 17:13 +07 - Cập nhật trạng thái backend entrypoint: `uv run python -m api.app` không còn bật Uvicorn reload để tránh WatchFiles theo dõi toàn repo.
 - 2026-07-27 17:19 +07 - Đổi backend entrypoint sang host `localhost` để backend chạy tại `localhost:8000`.
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline chunking không còn dùng `heroSlides.py`, kiểm tra import pipeline và số chunk hiện tại.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung sparse embedder, dữ liệu raw mới trùng nội dung với raw cũ và trạng thái CodeGraph mới nhất.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
-Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài liệu tổng quan, tài liệu tham khảo CodeGraph, cấu hình Docker Compose cho Qdrant, backend API, frontend Next.js và entrypoint cấp cao của dự án.
+Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài liệu tổng quan, tài liệu tham khảo CodeGraph, cấu hình Docker Compose cho Qdrant, backend API và frontend Next.js của dự án.
 
 CodeGraph đã được init local cho repo này bằng CLI `1.5.0`. Thư mục `.codegraph/` là index SQLite local, được ignore trong `.gitignore` và không nên commit.
+
+Trạng thái kiểm tra gần nhất ngày 2026-07-30 10:54 +07: `codegraph status .` báo `Index is up to date`, index có 53 files, 365 nodes, 561 edges, backend `node:sqlite` full WAL và journal `wal`.
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau khi init: CodeGraph watch project và cập nhật graph khi file thay đổi. Nếu cần kiểm tra thủ công, dùng `codegraph status .`; nếu nghi ngờ index lệch, dùng `codegraph sync`.
 
@@ -100,6 +103,15 @@ uv run python -m ingestion.pipeline
 
 Pipeline hiện không còn tạo chunk từ `heroSlides.json`. File `data/processed/heroSlides.json` vẫn tồn tại như dữ liệu processed, nhưng `ingestion/chunking/heroSlides.py` đã bị xoá khỏi code hiện tại để giảm nhiễu retrieval.
 
+`data/raw` hiện có hai file export giống hệt nhau theo checksum:
+
+```text
+database_export_2026-01-14T02-32-14.json
+database_export_2026-01-23T02-02-46.json
+```
+
+Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Trạng thái code hiện tại: `ingestion/load_data.py` vẫn đang đọc trực tiếp file ngày `2026-01-14`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
+
 Chạy backend FastAPI:
 
 ```bash
@@ -150,6 +162,8 @@ Trạng thái hiện tại: `frontend/node_modules/` tồn tại local tại th�
 `llm/generator.py` hiện được giữ nguyên làm legacy Ollama generator và chỉ hỗ trợ provider `ollama`.
 
 Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọi bởi endpoint `POST /api/chat/openai`.
+
+`embedding/sparse_embedder.py` hiện đã có code sparse embedding theo `tai_lieu/p2/4.txt`, gồm `tokenize()` và class `SparseEmbedder`. File này chưa được nối vào vector store hoặc retrieval; luồng lưu/truy xuất hiện vẫn là dense-only.
 
 Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 

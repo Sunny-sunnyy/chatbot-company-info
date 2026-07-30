@@ -20,6 +20,7 @@
 - 2026-07-27 17:19 +07 - Đổi host trong `api/app.py` sang `localhost` để backend chạy tại `localhost:8000`.
 - 2026-07-29 10:28 +07 - Cập nhật mốc học: dự án chuyển sang nhánh `UpdateV2` và bắt đầu giai đoạn nâng cao theo nội dung giới thiệu trong `tai_lieu/p2/0.txt`.
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/2.txt`: hoàn thiện mô tả chunking nâng cao, loại bỏ `heroSlides.py` khỏi pipeline, sửa import `interiorStyles.py` trong pipeline và kiểm tra lại số chunk hiện tại.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung mô tả sparse embedding, ghi nhận `embedding/sparse_embedder.py`, cập nhật trạng thái dữ liệu raw/processed và trạng thái CodeGraph hiện tại.
 
 ## Mốc Học Hiện Tại
 
@@ -31,13 +32,17 @@ Dự án hiện đã hoàn thành giai đoạn 1 sau buổi 7 và đang ở bran
 
 Tại thời điểm cập nhật sau `p2/2`, phần chunking trong code đã có helper metadata, helper chia đoạn, nhiều loại chunk nhỏ cho `projects`, `news`, `companyInfo`, các danh mục, phong cách nội thất và loại kiến trúc. File `ingestion/chunking/heroSlides.py` đã bị xoá và `ingestion/pipeline.py` không còn gọi `chunk_hero_slides()`.
 
-Mã nguồn hiện tại đã có phần embedding, vector store dense-only, retrieval, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
+`tai_lieu/p2/3.txt` là bài phân tích vấn đề của dense embedding hiện tại và lý do cần bổ sung sparse/keyword embedding. Nội dung bài giải thích dense embedding nắm ngữ nghĩa tổng thể nhưng có thể bỏ lỡ keyword quan trọng như địa điểm, con số, mức đầu tư hoặc loại công trình; hướng xử lý là tạo thêm biểu diễn sparse dựa trên token, vocabulary, document frequency, term frequency và inverse document frequency.
+
+`tai_lieu/p2/4.txt` là bài code sparse embedding. Nội dung bài xây dựng file sparse embedder gồm bước token hóa text, tạo vocabulary, tính document frequency, fit theo danh sách text, tính IDF và encode từng text thành cấu trúc sparse gồm `indices` và `values`.
+
+Mã nguồn hiện tại đã có phần dense embedding, file sparse embedding riêng, vector store dense-only, retrieval dense-only, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`, nhưng phần sparse embedding này chưa được nối vào `vectorstore/index.py`, chưa được lưu vào Qdrant và chưa được dùng trong `retrieval/retriever.py`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
 Đây là dự án học Python RAG để xây dựng chatbot trả lời thông tin về công ty Nguyen Minh Khang Architects.
 
-Dữ liệu hiện tại mô tả thông tin công ty, hero slides, phong cách nội thất, loại kiến trúc, danh mục dự án, dự án, danh mục tin tức và tin tức. Trong code chunking hiện tại, `heroSlides.json` vẫn tồn tại trong dữ liệu processed nhưng không còn được đưa vào pipeline tạo chunk.
+Dữ liệu raw hiện tại vẫn có bảng `heroSlides`, nhưng `data/processed/heroSlides.json` không còn được sử dụng trong code chunking hoặc pipeline ingestion hiện tại.
 
 Dự án hiện đi theo hướng RAG, không phải fine-tuning. Dữ liệu được xử lý thành các chunk có thể truy xuất, sau đó dùng làm ngữ cảnh cho LLM khi trả lời câu hỏi.
 
@@ -53,7 +58,7 @@ Các thư mục chính hiện có:
 - `ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
 - `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu đang dùng; `heroSlides.py` đã bị xoá khỏi code chunking hiện tại.
 - `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
-- `embedding`: chứa mã load model embedding và tạo embedding theo batch.
+- `embedding`: chứa mã load model dense embedding, tạo embedding theo batch và sparse embedder dựa trên token/TF-IDF.
 - `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point và upsert chunk vào Qdrant.
 - `retrieval`: chứa code truy vấn Qdrant bằng embedding query và chuẩn hóa kết quả về `RetrievedDocument`.
 - `llm`: chứa prompt template, legacy Ollama generator và OpenRouter generator dùng OpenAI Agents SDK.
@@ -101,6 +106,8 @@ Các thư mục chính hiện có:
 
 `embedding/batch_embed.py` đã có hàm `batch_embed_texts()`. File này đọc `embedding.batch_size` từ settings, chia danh sách text thành batch, gọi `embed_texts()` cho từng batch và gộp kết quả embedding.
 
+`embedding/sparse_embedder.py` đã có hàm `tokenize()` và class `SparseEmbedder`. `tokenize(text)` chuyển text về chữ thường, bỏ ký tự đặc biệt bằng regex và tách token bằng khoảng trắng. `SparseEmbedder` lưu `vocabulary`, `document_frequency` và `num_documents`; `fit(texts)` xây vocabulary và document frequency từ danh sách text; `encode(text)` trả sparse vector dạng dictionary gồm `indices` và `values`; `encode_batch(texts)` encode nhiều text bằng cách gọi `encode()` cho từng phần tử. File này hiện chưa được import hoặc dùng bởi vector store/retrieval, nên luồng đang chạy vẫn là dense-only.
+
 `vectorstore/qdrant.py` đã có hàm `get_qdrant_client()` và `ensure_collection()`. File này đọc cấu hình Qdrant từ settings, tạo `QdrantClient`, kiểm tra kết nối bằng `get_collections()`, và tạo collection dense-only bằng `VectorParams` nếu collection chưa tồn tại.
 
 `vectorstore/index.py` đã có hàm `build_qdrant_points()`. File này lấy text từ các chunk, gọi `embedding.embedder.embed_texts()` để tạo embedding, rồi build point dictionary gồm `id`, `vector` và `payload`.
@@ -139,9 +146,10 @@ Các file sau hiện tồn tại nhưng đang rỗng:
 - `ingestion/helpers/__init__.py`
 - `llm/__init__.py`
 - `retrieval/__init__.py`
+- `vectorstore/hybrid_index.py`
 - `vectorstore/__init__.py`
 
-Các file `__init__.py` rỗng hiện chỉ đóng vai trò package marker.
+Các file `__init__.py` rỗng hiện chỉ đóng vai trò package marker. `vectorstore/hybrid_index.py` hiện đang rỗng và chưa được phát triển.
 
 ## Trạng Thái Chạy Hiện Tại
 
@@ -217,8 +225,11 @@ Kết quả: Next.js production build compile thành công, type check thành c�
 File dữ liệu gốc hiện có:
 
 - `data/raw/database_export_2026-01-14T02-32-14.json`
+- `data/raw/database_export_2026-01-23T02-02-46.json`
 
-File gốc có object `tables` gồm 10 bảng:
+Hai file raw này đã được kiểm tra bằng `sha256sum` và có checksum giống nhau, nên nội dung hiện tại giống hệt nhau. Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Tuy nhiên code hiện tại trong `ingestion/load_data.py` vẫn đang đọc trực tiếp `database_export_2026-01-14T02-32-14.json`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
+
+Mỗi file raw có object `tables` gồm 10 bảng:
 
 - `settings`: 0 bản ghi
 - `companyInfo`: 1 bản ghi
@@ -242,6 +253,8 @@ Các file đã được tách trong `data/processed`:
 - `projectCategories.json`
 - `projects.json`
 
+`data/processed/heroSlides.json` vẫn tồn tại vì được tách từ bảng có dữ liệu trong raw export, nhưng file này không còn được dùng bởi module chunking hoặc `ingestion/pipeline.py`.
+
 Qdrant local hiện có dữ liệu được lưu trong `qdrant_storage/` do Docker Compose mount từ `./qdrant_storage` vào `/qdrant/storage` trong container. Collection `nmk_chatbot_collection` đã nhận 450 points theo log chạy pipeline sau buổi 5. Sau cập nhật `p2/2`, code chunking đã đổi thành phần chunk nhưng chưa chạy lại ingestion để thay thế dữ liệu trong Qdrant trong phiên kiểm tra này.
 
 ## Quyết Định Kỹ Thuật Hiện Tại
@@ -250,7 +263,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất, `codegraph status .` ghi nhận index hiện có 51 file, 350 nodes, 543 edges, backend `node:sqlite` với journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-07-30 10:54 +07, `codegraph status .` ghi nhận index hiện có 53 files, 365 nodes, 561 edges, DB size 0.89 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -276,7 +289,7 @@ Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` tr
 
 Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Phần retrieval, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`, nhưng vector store và retrieval hiện vẫn chưa dùng sparse embedding. Phần retrieval, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
 
 Backend chạy bằng:
 

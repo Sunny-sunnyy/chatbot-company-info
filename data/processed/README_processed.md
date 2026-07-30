@@ -6,6 +6,7 @@
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-25 17:23 +07 - Cập nhật ghi chú về các file chunking tương ứng với dữ liệu processed hiện tại.
+- 2026-07-30 10:54 +07 - Cập nhật trạng thái `heroSlides.json`: file vẫn tồn tại trong processed nhưng không còn được dùng bởi code chunking hoặc pipeline ingestion.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -88,6 +89,13 @@ Các field quan sát được:
 - `videoTitle`
 - `createdAt`
 - `updatedAt`
+
+Trạng thái sử dụng hiện tại:
+
+- File vẫn tồn tại trong `data/processed` vì bảng `heroSlides` có dữ liệu trong raw export.
+- File không còn có module chunking tương ứng trong `ingestion/chunking`.
+- File không còn được gọi trong `ingestion/pipeline.py`.
+- File không còn được dùng để tạo chunk hoặc upsert point vào Qdrant trong pipeline hiện tại.
 
 ### `interiorStyles.json`
 
@@ -220,13 +228,14 @@ JSON được ghi với:
 
 Đây là thư mục chứa dữ liệu sinh ra sau bước xử lý, không chứa mã nguồn Python.
 
-Tính tới thời điểm hiện tại, các file processed sau đã có file chunking tương ứng trong mã nguồn:
+Tính tới thời điểm hiện tại, các file processed sau có file chunking tương ứng trong mã nguồn:
 
 - `architectureTypes.json`
 - `companyInfo.json`
-- `heroSlides.json`
 - `interiorStyles.json`
 - `newsCategories.json`
 - `news.json`
 - `projectCategories.json`
 - `projects.json`
+
+`heroSlides.json` không còn có file chunking tương ứng và không còn được dùng trong pipeline ingestion.
