@@ -19,6 +19,7 @@
 - 2026-07-29 10:28 +07 - Cập nhật mô tả `Project_status.md` và `Agent_session_prompt.md` sau khi bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo `tai_lieu/p2/0.txt`.
 - 2026-07-29 20:56 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/2.txt`: chunking nâng cao, bỏ `heroSlides.py` khỏi pipeline và kiểm tra số chunk hiện tại.
 - 2026-07-30 10:54 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: sparse embedding, dữ liệu raw mới trùng nội dung với raw cũ, `heroSlides.json` không còn dùng trong pipeline và trạng thái CodeGraph mới nhất.
+- 2026-07-30 12:20 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: hybrid index, BM25 scorer, hybrid retriever và trạng thái chưa nối vào pipeline/API.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -54,9 +55,10 @@ Nội dung hiện có:
 - Chuẩn README hiện tại cho các folder có file Python thật.
 - Mốc bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo bài giới thiệu `tai_lieu/p2/0.txt`, đồng thời phân biệt rõ nội dung định hướng với trạng thái code đã triển khai.
 - Mốc sau `tai_lieu/p2/2.txt`: code chunking hiện đã bỏ `heroSlides.py`, pipeline không còn gọi hero slides, các chunk còn lại dùng metadata có `chunk_id`, `chunk_type` và `priority`, và kiểm tra trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert.
-- Mốc sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: repo có `embedding/sparse_embedder.py` với `tokenize()` và `SparseEmbedder`, nhưng vector store và retrieval hiện vẫn dense-only.
+- Mốc sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: repo có `embedding/sparse_embedder.py` với `tokenize()` và `SparseEmbedder`.
+- Mốc sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: repo có `vectorstore/hybrid_index.py`, `scoring/bm25.py` và `retrieval/hybrid_retriever.py`; pipeline và API hiện vẫn chưa chuyển sang hybrid.
 - Trạng thái dữ liệu raw hiện có hai file export giống hệt nhau theo checksum; từ các lần làm việc tiếp theo người dùng muốn dùng `database_export_2026-01-23T02-02-46.json`, trong khi code hiện tại vẫn đọc file ngày `2026-01-14`.
-- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 53 files, 365 nodes, 561 edges, backend `node:sqlite` full WAL.
+- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 56 files, 406 nodes, 638 edges, backend `node:sqlite` full WAL.
 
 ### `README_report.md`
 

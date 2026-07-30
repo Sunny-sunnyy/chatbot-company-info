@@ -10,6 +10,7 @@
 - 2026-07-25 18:42 +07 - Đối chiếu với nội dung buổi 4 và xác nhận mã embedding hiện có khớp phần load model, encode text và batch embedding.
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn embedding.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung `sparse_embedder.py`, ghi rõ sparse embedding chưa được nối vào vector store/retrieval và bổ sung trạng thái `__init__.py`.
+- 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: `SparseEmbedder` hiện được dùng bởi hybrid index và BM25 scorer, nhưng chưa nằm trong luồng ingestion/API chính.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -102,7 +103,13 @@ Vai trò và luồng hoạt động:
 - `encode(text)` nhận một chuỗi text, token hóa, tính term frequency bằng `Counter`, bỏ qua token chưa có trong vocabulary, rồi trả dictionary gồm `indices` và `values`.
 - Output của `encode(text)` có dạng `{"indices": list[int], "values": list[float]}`.
 - `encode_batch(texts)` trả `list[dict[str, list[float]]]`, mỗi phần tử tương ứng với một text đầu vào.
-- Trạng thái chạy hiện tại: file tồn tại và được CodeGraph index, nhưng chưa có automated test riêng, chưa được import bởi `vectorstore/index.py`, chưa được lưu vào Qdrant và chưa được dùng trong `retrieval/retriever.py`. Luồng ingestion/retrieval hiện tại vẫn dùng dense embedding.
+- Trạng thái chạy hiện tại: file tồn tại và được CodeGraph index, nhưng chưa có automated test riêng. File hiện được `vectorstore/hybrid_index.py` dùng để build sparse vector và được `scoring/bm25.py` dùng để lấy `tokenize`, `vocabulary`, `document_frequency` và `num_documents`. Tuy nhiên `ingestion/pipeline.py`, `vectorstore/upsert.py`, `vectorstore/qdrant.py` và API route hiện chưa nối sang luồng hybrid, nên luồng ingestion/retrieval chính vẫn dùng dense embedding.
+
+Ví dụ áp dụng trong dự án:
+
+- Với query `biệt thự Bình Phước 500 triệu`, dense embedding giúp bắt ý nghĩa gần như thiết kế biệt thự hoặc dự án dân dụng.
+- Sparse embedding giữ các keyword như `bình`, `phước`, `500`, `triệu` thành sparse indices/values để các bước hybrid/BM25 có thể tăng điểm cho document thật sự chứa những token này.
+- Trong code hiện tại, sparse vector này được chuẩn bị bởi `SparseEmbedder.encode_batch(texts)` khi `vectorstore/hybrid_index.py` được gọi, nhưng pipeline chưa gọi file đó.
 
 ### `__init__.py`
 

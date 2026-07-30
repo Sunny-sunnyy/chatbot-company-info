@@ -5,6 +5,7 @@
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
+- 2026-07-30 12:20 +07 - Cập nhật mô tả cấu hình `dense_weight`, `bm25_weight` và logger `scoring` liên quan tới BM25/hybrid retrieval.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -52,6 +53,8 @@ Giá trị hiện tại đáng chú ý:
 - `llm.model_name`: `qwen/qwen3.5-9b`
 - `llm.temperature`: `0.2`
 - `retrieval.top_k`: `10`
+- `retrieval.dense_weight`: `0.6`
+- `retrieval.bm25_weight`: `0.4`
 - `reranking.model`: `cross-encoder/ms-marco-MiniLM-L-6-v2`
 
 ### `logging.yaml`
@@ -76,6 +79,8 @@ Các logger đã được khai báo:
 - `retrieval`
 - `reranking`
 - `chat`
+
+Logger `scoring` hiện phục vụ `scoring/bm25.py`. Hai key `retrieval.dense_weight` và `retrieval.bm25_weight` hiện được `retrieval/hybrid_retriever.py` dùng để tính `hybrid_score = dense_weight * dense_score + bm25_weight * bm25_score`.
 
 ## Cách Hoạt Động Hiện Tại
 

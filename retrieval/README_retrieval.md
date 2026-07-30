@@ -9,6 +9,7 @@
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: `retriever.py` đã có code truy vấn Qdrant nhưng chưa chạy được nguyên vẹn vì `core/schema.py` vẫn rỗng.
 - 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `core/schema.py` đã có `RetrievedDocument`, nên module retrieval import được.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có sparse embedder, nhưng retrieval hiện vẫn truy vấn dense vector từ Qdrant.
+- 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_retriever.py`, lý thuyết BM25/hybrid retrieval, cách triển khai và ví dụ trong dự án.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -16,7 +17,33 @@ Thư mục `retrieval` chứa mã truy xuất tài liệu liên quan từ vector
 
 Tính tới sau buổi 7, thư mục này đã có code embedding query, truy vấn collection Qdrant và chuẩn hóa kết quả truy vấn thành document. `core/schema.py` đã định nghĩa `RetrievedDocument`, nên module retrieval hiện import được.
 
-Sau `tai_lieu/p2/4.txt`, repo đã có `embedding/sparse_embedder.py`, nhưng `retrieval/retriever.py` hiện chưa import hoặc dùng sparse embedding. Luồng retrieval hiện vẫn là dense-only.
+Sau `tai_lieu/p2/7.txt`, repo đã có thêm `retrieval/hybrid_retriever.py` để kết hợp dense retrieval với BM25 score. Luồng API hiện tại vẫn chưa gọi hybrid retriever; route chat hiện vẫn dùng `retrieval/retriever.py`.
+
+## Lý Thuyết BM25 Và Hybrid Retrieval
+
+Dense retrieval và BM25 giải quyết hai phần khác nhau của truy xuất:
+
+- Dense retrieval: chuyển query thành vector ngữ nghĩa và tìm document gần nghĩa trong Qdrant. Cách này tốt khi người dùng hỏi khác từ nhưng cùng ý.
+- BM25: tính mức liên quan keyword giữa query và document. Cách này tốt khi query có từ khóa quan trọng như địa điểm, diện tích, con số, tên loại công trình.
+- Hybrid retrieval: lấy kết quả dense trước, sau đó cộng thêm BM25 score để rerank theo cả ngữ nghĩa và keyword.
+
+Trong code hiện tại, công thức trộn score nằm trong `hybrid_retriever.py`:
+
+```python
+hybrid_score = DENSE_WEIGHT * dense_score + BM25_WEIGHT * bm25_score
+```
+
+Giá trị mặc định lấy từ `config/settings.yaml`:
+
+- `dense_weight`: `0.6`
+- `bm25_weight`: `0.4`
+
+Ví dụ trong dự án:
+
+- Query: `Dự án biệt thự ở Bình Phước diện tích 520m2`.
+- Dense retrieval có thể tìm các chunk liên quan tới biệt thự hoặc dự án nhà ở dù không trùng toàn bộ keyword.
+- BM25 tăng điểm cho chunk thật sự chứa `Bình Phước` và `520m2`.
+- Hybrid retriever trả về document có `score` cuối cùng, đồng thời lưu `dense_score` và `bm25_score` trong metadata để debug.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -62,6 +89,48 @@ Vai trò và luồng hoạt động:
 - Output dự kiến là `list[RetrievedDocument]`, mỗi document gồm `id`, `score`, `text` và `metadata`.
 - Trạng thái chạy hiện tại: module import được sau khi `core/schema.py` có `RetrievedDocument`. Luồng truy vấn thật vẫn cần Qdrant đang chạy, collection đã có dữ liệu và embedding model load được. Module này chưa dùng `embedding.sparse_embedder`.
 
+### `hybrid_retriever.py`
+
+File này đã có mã nguồn.
+
+Nội dung hiện tại:
+
+- Import `logging` và `List`.
+- Import `QdrantClient`, `ScoredPoint` và `ResponseHandlingException`.
+- Import `load_settings`, `RetrievedDocument`, `get_qdrant_client`, `embed_texts` và `BM25`.
+- Đọc `collection_name`, `top_k`, `score_threshold`, `dense_weight` và `bm25_weight` từ settings.
+- Định nghĩa hàm `hybrid_retrieve(query: str, bm25: BM25) -> List[RetrievedDocument]`.
+
+Vai trò và luồng hoạt động:
+
+- `hybrid_retrieve(query, bm25)` nhận query của người dùng và một object `BM25` đã được chuẩn bị sẵn.
+- Hàm kiểm tra query rỗng.
+- Hàm tạo dense embedding cho query bằng `embed_texts([query])`.
+- Hàm truy vấn Qdrant bằng `client.query_points(...)` với `using="dense"` và `limit=TOP_K * 3` để lấy dư document trước khi rerank.
+- Với từng point trả về, hàm lấy `payload["text"]`, tính `bm25.score(query, text)`, rồi tính hybrid score.
+- Hàm tạo `RetrievedDocument` với `score` là hybrid score và metadata có thêm `dense_score`, `bm25_score`.
+- Hàm sort document theo hybrid score giảm dần và trả về `TOP_K` document đầu.
+
+Input/output:
+
+- Input chính: `query: str` và `bm25: BM25`.
+- Output chính: `list[RetrievedDocument]`.
+- Mỗi `RetrievedDocument.metadata` có thêm `dense_score` và `bm25_score` để xem document mạnh vì ngữ nghĩa hay keyword.
+
+Ví dụ áp dụng:
+
+- Dense score của một chunk dự án là `0.72`.
+- BM25 score giữa query `Bình Phước 520m2` và chunk là `1.8`.
+- Với `dense_weight=0.6`, `bm25_weight=0.4`, score cuối là `0.6 * 0.72 + 0.4 * 1.8 = 1.152`.
+- Chunk này có thể vượt một chunk khác chỉ gần nghĩa nhưng không chứa keyword địa điểm/diện tích.
+
+Trạng thái hiện tại:
+
+- File đã có code hybrid retrieval.
+- File phụ thuộc Qdrant collection có named vector `dense`, vì query gọi `using="dense"`.
+- Pipeline/upsert hiện chưa tạo collection/point hybrid tương ứng.
+- API route hiện chưa gọi `hybrid_retrieve()`, nên luồng chat đang chạy chưa dùng hybrid retriever.
+
 ### `__init__.py`
 
 File này hiện đang rỗng.
@@ -70,7 +139,7 @@ File đánh dấu `retrieval` là Python package.
 
 ## Cách Hoạt Động Hiện Tại
 
-Luồng retrieval theo code hiện tại:
+Luồng retrieval dense-only theo code hiện tại:
 
 1. Nhận query dạng text.
 2. Chuyển query thành dense embedding bằng `embedding.embedder.embed_texts`.
@@ -80,7 +149,7 @@ Luồng retrieval theo code hiện tại:
 
 Luồng này hiện không còn dừng ở bước import schema. Khi chạy thật, kết quả phụ thuộc trạng thái Qdrant local và collection `nmk_chatbot_collection`.
 
-Sparse embedding chưa được dùng trong bước truy vấn hiện tại.
+Luồng hybrid retrieval đã có code riêng trong `hybrid_retriever.py`, nhưng chưa được nối vào API.
 
 ## Ghi Chú Kỹ Thuật
 
@@ -88,5 +157,7 @@ Cấu hình retrieval hiện lấy từ `config/settings.yaml`:
 
 - `retrieval.top_k`: `10`
 - `retrieval.score_threshold`: `0.0`
+- `retrieval.dense_weight`: `0.6`
+- `retrieval.bm25_weight`: `0.4`
 
 Qdrant collection hiện lấy từ `vector_database.collection_name`, đang là `nmk_chatbot_collection`.

@@ -10,12 +10,30 @@
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn vector store.
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: `qdrant.py` và `upsert.py` chuyển về dense-only, pipeline đã upsert 450 chunks vào Qdrant theo kết quả chạy thực tế của người dùng.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có `embedding/sparse_embedder.py`, nhưng vector store hiện vẫn dense-only; bổ sung trạng thái `hybrid_index.py` đang rỗng.
+- 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`: `hybrid_index.py` đã có code build dense+sparse point; bổ sung lý thuyết, cách triển khai và ví dụ áp dụng hybrid index trong dự án.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `vectorstore` chứa mã kết nối Qdrant, đảm bảo collection tồn tại, chuyển chunk thành Qdrant point và upsert point vào vector store.
 
-Tính tới thời điểm kiểm tra này, luồng vector store hiện đang dùng dense vector đơn thuần, chưa dùng hybrid search hoặc sparse vector. Repo đã có `embedding/sparse_embedder.py`, nhưng file này chưa được import hoặc dùng trong các file mã nguồn đang chạy của thư mục `vectorstore`.
+Tính tới thời điểm kiểm tra này, luồng vector store chính vẫn đang dùng dense vector đơn thuần qua `vectorstore/index.py` và `vectorstore/upsert.py`.
+
+Repo đã có `vectorstore/hybrid_index.py` để chuẩn bị point có cả dense vector và sparse vector, nhưng file này chưa được `upsert.py` hoặc `ingestion/pipeline.py` gọi. `vectorstore/qdrant.py` hiện vẫn tạo collection dense-only, chưa tạo collection Qdrant có named vectors `dense`/`sparse`.
+
+## Lý Thuyết Hybrid Index
+
+Hybrid index trong dự án này là cách lưu cùng một chunk dưới hai biểu diễn:
+
+- Dense vector: vector ngữ nghĩa từ `SentenceTransformer`, phù hợp với câu hỏi diễn đạt gần nghĩa nhưng không trùng từ.
+- Sparse vector: vector keyword từ `SparseEmbedder`, phù hợp với câu hỏi có token quan trọng như địa danh, con số, diện tích, loại công trình hoặc mức đầu tư.
+
+Ví dụ trong dự án:
+
+- Chunk dự án có text chứa `Biệt thự hiện đại tại Bình Phước, mức đầu tư 500 triệu`.
+- Dense vector giúp truy vấn `mẫu nhà sang trọng ở tỉnh miền Đông` vẫn có cơ hội tìm được document gần nghĩa.
+- Sparse vector giúp truy vấn `Bình Phước 500 triệu` không bị mất hai keyword quan trọng `bình/phước` và `500/triệu`.
+
+Hybrid index không thay thế dense index; nó lưu thêm sparse vector song song để bước retrieval sau này có thể kết hợp dense score và keyword score.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -107,9 +125,53 @@ Vai trò và luồng hoạt động:
 
 ### `hybrid_index.py`
 
-File này hiện đang rỗng và chưa được phát triển.
+File này đã có mã nguồn.
 
-File chưa có import, hàm, class hoặc luồng xử lý. Không có code nào trong thư mục `vectorstore` đang gọi file này.
+Nội dung hiện tại:
+
+- Import `logging` và `uuid`.
+- Import `PointStruct` và `SparseVector` từ `qdrant_client.models`.
+- Import `embed_texts` từ `embedding.embedder`.
+- Import `SparseEmbedder` từ `embedding.sparse_embedder`.
+- Tạo logger tên `vector_database`.
+- Khai báo biến module `_sparse_embedder`.
+- Định nghĩa hàm `init_sparse_embedder(embedder)`.
+- Định nghĩa hàm `build_hybrid_qdrant_points(chunks)`.
+
+Vai trò và luồng hoạt động:
+
+- `init_sparse_embedder(embedder)` nhận một `SparseEmbedder` đã fit vocabulary/document frequency và lưu vào biến module `_sparse_embedder`.
+- `build_hybrid_qdrant_points(chunks)` nhận list chunk có key `text` và `metadata`.
+- Hàm lấy toàn bộ `text`, tạo dense embedding bằng `embed_texts(texts)`, tạo sparse embedding bằng `_sparse_embedder.encode_batch(texts)`.
+- Với mỗi chunk, hàm tạo `PointStruct` có `id`, `payload` và `vector` gồm hai named vectors:
+  - `dense`: dense vector từ `SentenceTransformer`.
+  - `sparse`: `SparseVector(indices=..., values=...)` từ sparse embedder.
+- Output là `list[PointStruct]` để có thể truyền cho Qdrant upsert khi collection hỗ trợ named vectors.
+
+Ví dụ triển khai trong dự án:
+
+1. Chunk text: `Dự án biệt thự tại Bình Phước có diện tích 520m2`.
+2. Dense vector được tạo bằng `embed_texts([text])`.
+3. Sparse vector có thể chứa token ids cho `dự`, `án`, `biệt`, `thự`, `bình`, `phước`, `520m2` cùng weight tương ứng.
+4. Qdrant point dự kiến có dạng logic:
+
+```python
+{
+    "id": "<chunk_id>",
+    "vector": {
+        "dense": [...],
+        "sparse": {"indices": [...], "values": [...]},
+    },
+    "payload": {"text": "...", "...metadata": "..."},
+}
+```
+
+Trạng thái hiện tại:
+
+- File đã có code build hybrid point.
+- File yêu cầu gọi `init_sparse_embedder(...)` trước khi build point; nếu chưa gọi sẽ raise `RuntimeError`.
+- File chưa được `vectorstore/upsert.py` hoặc `ingestion/pipeline.py` gọi.
+- `vectorstore/qdrant.py` hiện chưa tạo collection có named vector `dense` và sparse vector, nên chưa thể coi luồng hybrid index là đã chạy end-to-end.
 
 ## Trạng Thái Chạy Hiện Tại
 
@@ -132,7 +194,14 @@ Trong quá trình chunking có nhiều warning `Empty text provided to split_par
 
 ## Ghi Chú Kỹ Thuật
 
-Luồng hiện tại là dense-only. Collection được tạo bằng unnamed dense vector theo cấu trúc point từ `vectorstore/index.py`.
+Luồng đang chạy qua pipeline hiện tại vẫn là dense-only. Collection được tạo bằng unnamed dense vector theo cấu trúc point từ `vectorstore/index.py`.
+
+Luồng hybrid index đã có file riêng nhưng chưa được nối vào pipeline. Để dùng thật, các phần còn cần khớp với nhau là:
+
+- Fit `SparseEmbedder` trên toàn bộ chunk text.
+- Gọi `init_sparse_embedder(...)`.
+- Tạo Qdrant collection có named dense vector và sparse vector.
+- Thay luồng build point trong upsert/pipeline sang `build_hybrid_qdrant_points(...)`.
 
 Qdrant đang được cấu hình trong `config/settings.yaml` với:
 

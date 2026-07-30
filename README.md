@@ -14,6 +14,7 @@
 - 2026-07-27 17:19 +07 - Đổi backend entrypoint sang host `localhost` để backend chạy tại `localhost:8000`.
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline chunking không còn dùng `heroSlides.py`, kiểm tra import pipeline và số chunk hiện tại.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung sparse embedder, dữ liệu raw mới trùng nội dung với raw cũ và trạng thái CodeGraph mới nhất.
+- 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung hybrid index, BM25 scorer, hybrid retriever và trạng thái chưa nối vào pipeline/API.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -21,7 +22,7 @@ Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài 
 
 CodeGraph đã được init local cho repo này bằng CLI `1.5.0`. Thư mục `.codegraph/` là index SQLite local, được ignore trong `.gitignore` và không nên commit.
 
-Trạng thái kiểm tra gần nhất ngày 2026-07-30 10:54 +07: `codegraph status .` báo `Index is up to date`, index có 53 files, 365 nodes, 561 edges, backend `node:sqlite` full WAL và journal `wal`.
+Trạng thái kiểm tra gần nhất ngày 2026-07-30 12:20 +07: `codegraph status .` báo `Index is up to date`, index có 56 files, 406 nodes, 638 edges, backend `node:sqlite` full WAL và journal `wal`.
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau khi init: CodeGraph watch project và cập nhật graph khi file thay đổi. Nếu cần kiểm tra thủ công, dùng `codegraph status .`; nếu nghi ngờ index lệch, dùng `codegraph sync`.
 
@@ -56,6 +57,10 @@ Thư mục này chứa frontend Next.js của chatbot. Frontend hiện gọi end
 ### `tests/`
 
 Thư mục này chứa automated tests cho luồng OpenRouter mới. README chi tiết nằm ở `tests/README_tests.md`.
+
+### `scoring/`
+
+Thư mục này chứa code tính điểm BM25 cho hybrid retrieval. README chi tiết nằm ở `scoring/README_scoring.md`.
 
 ### `docker-compose.yml`
 
@@ -163,7 +168,11 @@ Trạng thái hiện tại: `frontend/node_modules/` tồn tại local tại th�
 
 Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọi bởi endpoint `POST /api/chat/openai`.
 
-`embedding/sparse_embedder.py` hiện đã có code sparse embedding theo `tai_lieu/p2/4.txt`, gồm `tokenize()` và class `SparseEmbedder`. File này chưa được nối vào vector store hoặc retrieval; luồng lưu/truy xuất hiện vẫn là dense-only.
+`embedding/sparse_embedder.py` hiện đã có code sparse embedding theo `tai_lieu/p2/4.txt`, gồm `tokenize()` và class `SparseEmbedder`.
+
+`vectorstore/hybrid_index.py` hiện đã có code build point có named vector `dense` và `sparse`, nhưng `ingestion/pipeline.py` và `vectorstore/upsert.py` chưa gọi file này. Qdrant collection hiện vẫn được tạo theo luồng dense-only trong `vectorstore/qdrant.py`.
+
+`scoring/bm25.py` hiện đã có class `BM25` để tính keyword relevance giữa query và document. `retrieval/hybrid_retriever.py` hiện đã có hàm `hybrid_retrieve(query, bm25)` để trộn dense score và BM25 score theo `dense_weight`/`bm25_weight` trong settings, nhưng API route hiện chưa gọi luồng hybrid này.
 
 Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 
