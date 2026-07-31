@@ -46,12 +46,14 @@ Hãy đọc theo thứ tự này trước khi kết luận hoặc chỉnh sửa:
 2. Đọc `report/Project_status.md` để nắm trạng thái tổng quan mới nhất.
 3. Đọc `report/README_report.md` để hiểu mục đích folder report.
 4. Đọc README ở các folder liên quan tới task hiện tại.
-5. Nếu task là cập nhật sau một buổi học, chỉ đọc transcript của đúng buổi đó trong `tai_lieu/<so_buoi>.txt`.
+5. Nếu task là cập nhật sau một buổi học, chỉ đọc transcript của đúng buổi đó trong `tai_lieu/<so_buoi>.txt` hoặc `tai_lieu/p2/<so_buoi>.txt`.
 6. Nếu cần đối chiếu trạng thái sau nhiều buổi, đọc các transcript từ buổi đã được yêu cầu, không tự đọc trước các buổi chưa học hoặc chưa được yêu cầu.
 7. Đọc code thật trong các folder liên quan để xác minh README có đúng không.
 8. Nếu task là audit toàn dự án, đọc toàn bộ README theo folder và các file code tương ứng.
 
 Nếu người dùng nói tới giai đoạn nâng cao, phần 2 hoặc `p2`, transcript tương ứng nằm trong `tai_lieu/p2/<so_buoi>.txt`. Ví dụ bài giới thiệu giai đoạn nâng cao là `tai_lieu/p2/0.txt`.
+
+Chúng ta đã chuyển sang giai đoạn nâng cao của dự án.
 
 ## Quy Tắc Sử Dụng CodeGraph
 
