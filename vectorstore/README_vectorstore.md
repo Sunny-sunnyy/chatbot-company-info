@@ -11,6 +11,7 @@
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: `qdrant.py` và `upsert.py` chuyển về dense-only, pipeline đã upsert 450 chunks vào Qdrant theo kết quả chạy thực tế của người dùng.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có `embedding/sparse_embedder.py`, nhưng vector store hiện vẫn dense-only; bổ sung trạng thái `hybrid_index.py` đang rỗng.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`: `hybrid_index.py` đã có code build dense+sparse point; bổ sung lý thuyết, cách triển khai và ví dụ áp dụng hybrid index trong dự án.
+- 2026-07-31 15:45 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_index.py` trong luồng chuẩn bị point hybrid dense+sparse cho Qdrant.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -126,6 +127,15 @@ Vai trò và luồng hoạt động:
 ### `hybrid_index.py`
 
 File này đã có mã nguồn.
+
+Trách nhiệm chính của file:
+
+- Chuẩn bị Qdrant point theo hướng hybrid, tức mỗi chunk có cả dense vector và sparse vector.
+- Nhận `SparseEmbedder` đã được fit trước đó qua `init_sparse_embedder(...)` để dùng cùng một vocabulary/document frequency cho toàn bộ batch chunk.
+- Tạo dense embedding từ text bằng `embedding.embedder.embed_texts(...)`.
+- Tạo sparse vector từ text bằng `SparseEmbedder.encode_batch(...)`.
+- Ghép `id`, `payload`, named vector `dense` và named vector `sparse` thành `PointStruct` phù hợp với Qdrant collection kiểu hybrid.
+- Giữ phần build point hybrid tách riêng khỏi luồng dense-only trong `vectorstore/index.py`, để code hiện tại vẫn có thể chạy dense-only trong khi phần hybrid đang được chuẩn bị.
 
 Nội dung hiện tại:
 

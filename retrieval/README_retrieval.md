@@ -11,6 +11,8 @@
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có sparse embedder, nhưng retrieval hiện vẫn truy vấn dense vector từ Qdrant.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_retriever.py`, lý thuyết BM25/hybrid retrieval, cách triển khai và ví dụ trong dự án.
 
+- 2026-07-31 16:21 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_retriever.py` trong luồng retrieval hybrid dense+BM25.
+
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `retrieval` chứa mã truy xuất tài liệu liên quan từ vector store.
@@ -90,6 +92,17 @@ Vai trò và luồng hoạt động:
 - Trạng thái chạy hiện tại: module import được sau khi `core/schema.py` có `RetrievedDocument`. Luồng truy vấn thật vẫn cần Qdrant đang chạy, collection đã có dữ liệu và embedding model load được. Module này chưa dùng `embedding.sparse_embedder`.
 
 ### `hybrid_retriever.py`
+
+Trách nhiệm chính của file:
+
+- Thực hiện retrieval theo hướng hybrid bằng cách kết hợp dense retrieval từ Qdrant với BM25 keyword score.
+- Nhận query của người dùng và object `BM25` đã được chuẩn bị sẵn từ corpus chunk.
+- Tạo dense embedding cho query bằng `embedding.embedder.embed_texts(...)`.
+- Truy vấn Qdrant bằng named vector `dense` để lấy nhiều candidate hơn `top_k` trước khi rerank.
+- Tính `bm25_score` cho từng candidate dựa trên text trong payload.
+- Tính `hybrid_score` bằng công thức `dense_weight * dense_score + bm25_weight * bm25_score`.
+- Sắp xếp candidate theo `hybrid_score`, cắt về `TOP_K` document và chuẩn hóa kết quả thành `RetrievedDocument`.
+- Ghi thêm `dense_score` và `bm25_score` vào metadata để hỗ trợ debug chất lượng retrieval.
 
 File này đã có mã nguồn.
 

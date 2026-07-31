@@ -3,6 +3,7 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-30 12:20 +07 - Tạo README cho thư mục `scoring` sau khi đọc `tai_lieu/p2/6.txt`, `tai_lieu/p2/7.txt` và đối chiếu với code BM25 hiện tại.
+- 2026-07-31 16:09 +07 - Bổ sung mô tả rõ trách nhiệm của `bm25.py` trong luồng tính keyword relevance cho hybrid retrieval.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -49,6 +50,16 @@ File này mô tả nhiệm vụ của thư mục `scoring`, lý thuyết BM25, c
 ### `bm25.py`
 
 File này đã có mã nguồn.
+
+Trách nhiệm chính của file:
+
+- Tính điểm liên quan keyword giữa query và document theo công thức BM25.
+- Dùng `SparseEmbedder` đã fit để lấy `vocabulary`, `document_frequency` và `num_documents`.
+- Tính độ dài trung bình của tập document để điều chỉnh điểm theo độ dài document.
+- Token hóa query và document bằng cùng hàm `tokenize(...)` trong `embedding/sparse_embedder.py`.
+- Tính điểm cho từng term trong query dựa trên IDF, term frequency, `k1` và `b`.
+- Trả về BM25 score cho một document hoặc danh sách score cho nhiều document.
+- Cung cấp điểm keyword để `retrieval/hybrid_retriever.py` trộn với dense score khi rerank kết quả retrieval.
 
 Nội dung hiện tại:
 
