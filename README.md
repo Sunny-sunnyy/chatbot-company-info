@@ -15,6 +15,7 @@
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline chunking không còn dùng `heroSlides.py`, kiểm tra import pipeline và số chunk hiện tại.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung sparse embedder, dữ liệu raw mới trùng nội dung với raw cũ và trạng thái CodeGraph mới nhất.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung hybrid index, BM25 scorer, hybrid retriever và trạng thái chưa nối vào pipeline/API.
+- 2026-07-31 17:07 +07 - Cập nhật trạng thái sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung folder `reranking`, `retrieval/context_builder.py` và trạng thái chưa nối vào API.
 
 ## Nhiệm Vụ Thư Mục Gốc
 
@@ -22,7 +23,7 @@ Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài 
 
 CodeGraph đã được init local cho repo này bằng CLI `1.5.0`. Thư mục `.codegraph/` là index SQLite local, được ignore trong `.gitignore` và không nên commit.
 
-Trạng thái kiểm tra gần nhất ngày 2026-07-30 12:20 +07: `codegraph status .` báo `Index is up to date`, index có 56 files, 406 nodes, 638 edges, backend `node:sqlite` full WAL và journal `wal`.
+Trạng thái kiểm tra gần nhất ngày 2026-07-31 17:07 +07: `codegraph status .` báo `Index is up to date`, index có 62 files, 436 nodes, 674 edges, backend `node:sqlite` full WAL và journal `wal`.
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau khi init: CodeGraph watch project và cập nhật graph khi file thay đổi. Nếu cần kiểm tra thủ công, dùng `codegraph status .`; nếu nghi ngờ index lệch, dùng `codegraph sync`.
 
@@ -61,6 +62,10 @@ Thư mục này chứa automated tests cho luồng OpenRouter mới. README chi 
 ### `scoring/`
 
 Thư mục này chứa code tính điểm BM25 cho hybrid retrieval. README chi tiết nằm ở `scoring/README_scoring.md`.
+
+### `reranking/`
+
+Thư mục này chứa code rerank document bằng CrossEncoder trước khi build context cho LLM. README chi tiết nằm ở `reranking/README_reranking.md`.
 
 ### `docker-compose.yml`
 
@@ -173,6 +178,8 @@ Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọ
 `vectorstore/hybrid_index.py` hiện đã có code build point có named vector `dense` và `sparse`, nhưng `ingestion/pipeline.py` và `vectorstore/upsert.py` chưa gọi file này. Qdrant collection hiện vẫn được tạo theo luồng dense-only trong `vectorstore/qdrant.py`.
 
 `scoring/bm25.py` hiện đã có class `BM25` để tính keyword relevance giữa query và document. `retrieval/hybrid_retriever.py` hiện đã có hàm `hybrid_retrieve(query, bm25)` để trộn dense score và BM25 score theo `dense_weight`/`bm25_weight` trong settings, nhưng API route hiện chưa gọi luồng hybrid này.
+
+`reranking` hiện đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker` để chấm điểm lại document theo cặp query/document. `retrieval/context_builder.py` hiện đã có `ContextBuilder` để ghép document thành context có giới hạn số document và độ dài. API route hiện chưa gọi reranker hoặc context builder này.
 
 Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 

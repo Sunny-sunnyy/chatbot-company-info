@@ -22,6 +22,7 @@
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/2.txt`: hoàn thiện mô tả chunking nâng cao, loại bỏ `heroSlides.py` khỏi pipeline, sửa import `interiorStyles.py` trong pipeline và kiểm tra lại số chunk hiện tại.
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung mô tả sparse embedding, ghi nhận `embedding/sparse_embedder.py`, cập nhật trạng thái dữ liệu raw/processed và trạng thái CodeGraph hiện tại.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_index.py`, `hybrid_retriever.py`, `scoring/bm25.py`, lý thuyết BM25/hybrid retrieval và trạng thái CodeGraph mới nhất.
+- 2026-07-31 17:07 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả hybrid retriever có BM25, folder `reranking`, `retrieval/context_builder.py` và trạng thái CodeGraph mới nhất.
 
 ## Mốc Học Hiện Tại
 
@@ -43,7 +44,11 @@ Tại thời điểm cập nhật sau `p2/2`, phần chunking trong code đã c�
 
 `tai_lieu/p2/7.txt` là bài code BM25 scorer. Nội dung bài tạo class `BM25`, tính average document length, tính score giữa query và từng document, rồi chuẩn bị dùng score này trong hybrid retriever.
 
-Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `scoring/bm25.py` đã có class `BM25`, và `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`. Tuy nhiên luồng chạy chính hiện vẫn chưa gọi các module hybrid này: `ingestion/pipeline.py` vẫn gọi `upsert_chunks()`, `vectorstore/upsert.py` vẫn gọi `build_qdrant_points()` dense-only, `vectorstore/qdrant.py` vẫn tạo collection dense-only, và API route hiện vẫn gọi `retrieval/retriever.py` hoặc generator hiện có chứ chưa gọi `hybrid_retrieve()`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
+`tai_lieu/p2/8.txt` là bài đưa BM25 score vào hybrid retriever. Nội dung bài giải thích việc lấy dư candidate bằng dense retrieval, tính BM25 score theo query/text, trộn điểm bằng `dense_weight` và `bm25_weight`, lưu thêm `dense_score` và `bm25_score` vào metadata, sort lại theo hybrid score và trả về `TOP_K` document.
+
+`tai_lieu/p2/9.txt` là bài hoàn thiện reranking và context builder để chuẩn bị context cho LLM. Nội dung bài tạo base reranker, CrossEncoder model wrapper, CrossEncoder reranker để chấm điểm cặp query/document, sort/cắt top document, và `ContextBuilder` để ghép document thành context có giới hạn số document, giới hạn độ dài và separator.
+
+Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, reranking bằng CrossEncoder, context builder, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `scoring/bm25.py` đã có class `BM25`, `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`, `reranking` đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker`, còn `retrieval/context_builder.py` đã có class `ContextBuilder`. Tuy nhiên luồng chạy chính hiện vẫn chưa gọi các module hybrid/reranking/context builder này: `ingestion/pipeline.py` vẫn gọi `upsert_chunks()`, `vectorstore/upsert.py` vẫn gọi `build_qdrant_points()` dense-only, `vectorstore/qdrant.py` vẫn tạo collection dense-only, và API route hiện vẫn gọi `retrieval/retriever.py` rồi tự build context trong route chứ chưa gọi `hybrid_retrieve()`, reranker hoặc `ContextBuilder`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
@@ -69,6 +74,7 @@ Các thư mục chính hiện có:
 - `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point dense-only, build point hybrid và upsert chunk vào Qdrant.
 - `retrieval`: chứa code truy vấn Qdrant bằng dense embedding query, code hybrid retriever có BM25 score và chuẩn hóa kết quả về `RetrievedDocument`.
 - `scoring`: chứa code tính điểm BM25 cho query/document.
+- `reranking`: chứa code rerank document bằng CrossEncoder trước khi build context cho LLM.
 - `llm`: chứa prompt template, legacy Ollama generator và OpenRouter generator dùng OpenAI Agents SDK.
 - `logs`: chứa file log của ứng dụng.
 - `report`: chứa tài liệu báo cáo trạng thái dự án.
@@ -128,7 +134,15 @@ Các thư mục chính hiện có:
 
 `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`. File này embedding query thành dense vector, truy vấn Qdrant bằng named vector `dense` với `limit=TOP_K * 3`, tính `bm25.score(query, text)` cho từng payload text, rồi tính `hybrid_score = DENSE_WEIGHT * dense_score + BM25_WEIGHT * bm25_score`. Metadata trả về có thêm `dense_score` và `bm25_score`. Trạng thái hiện tại: file đã có code nhưng chưa được API route hoặc frontend gọi.
 
+`retrieval/context_builder.py` đã có class `ContextBuilder`. Class này nhận `max_documents`, `max_context_length` và `separator`; hàm `build(documents)` lấy tối đa số document cấu hình, bỏ qua document rỗng, cắt text nếu context vượt giới hạn độ dài, ghép các phần bằng separator và trả về chuỗi context. Trạng thái hiện tại: file đã có code nhưng chưa được API route hoặc generator gọi.
+
 `scoring/bm25.py` đã có class `BM25`. Class này nhận `SparseEmbedder` đã fit, đọc `vocabulary`, `document_frequency` và `num_documents`, có `compute_average_document_length(documents)` để tính độ dài document trung bình, `score(query, document)` để tính BM25 score giữa một query và một document, và `score_batch(query, documents)` để tính nhiều document. Trạng thái hiện tại: file được `retrieval/hybrid_retriever.py` import, nhưng chưa có luồng end-to-end đang gọi hybrid retriever từ API.
+
+`reranking/base.py` đã có class `BaseReranker` với method `rerank(query, documents, top_k=None)` raise `NotImplementedError`, đóng vai trò interface chung cho các reranker.
+
+`reranking/models/cross_encoder.py` đã có class `CrossEncoderModel`. Class này load `sentence_transformers.CrossEncoder` theo `model_name` và `device`, rồi có method `score_batch(pairs)` để chấm điểm danh sách cặp `(query, document_text)`.
+
+`reranking/reranker.py` đã có class `CrossEncoderReranker` kế thừa `BaseReranker`. Class này nhận `CrossEncoderModel`, tạo các cặp `(query, doc.text)`, gọi `score_batch(...)`, ghi `rerank_score` vào metadata từng document, sort document theo `rerank_score` giảm dần, cắt `top_k` nếu được truyền và trả về list `RetrievedDocument`. Trạng thái hiện tại: folder `reranking` đã có code nhưng chưa được API route hoặc frontend gọi.
 
 `llm/prompt.py` đã có `SYSTEM_PROMPT` và hàm `build_prompt(context, question)`. File này tạo prompt tiếng Việt cho chatbot NMK Architects, yêu cầu trả lời dựa trên context và không tự bịa thông tin ngoài dữ liệu.
 
@@ -159,6 +173,8 @@ Các file sau hiện tồn tại nhưng đang rỗng:
 - `ingestion/chunking/__init__.py`
 - `ingestion/helpers/__init__.py`
 - `llm/__init__.py`
+- `reranking/__init__.py`
+- `reranking/models/__init__.py`
 - `retrieval/__init__.py`
 - `scoring/__init__.py`
 - `vectorstore/__init__.py`
@@ -277,7 +293,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-07-30 12:20 +07, `codegraph status .` ghi nhận index hiện có 56 files, 406 nodes, 638 edges, DB size 0.96 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-07-31 17:07 +07, `codegraph status .` ghi nhận index hiện có 62 files, 436 nodes, 674 edges, DB size 1.00 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -303,7 +319,7 @@ Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` tr
 
 Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/7`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Tuy nhiên luồng ingestion/API hiện tại vẫn chưa chuyển sang hybrid: chưa có upsert hybrid point qua pipeline, chưa tạo collection Qdrant named vector `dense`/`sparse`, và chưa gọi `hybrid_retrieve()` từ API. Phần retrieval dense-only, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/8`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Sau `p2/9`, repo có thêm folder `reranking` và `retrieval/context_builder.py`. Tuy nhiên luồng ingestion/API hiện tại vẫn chưa chuyển sang hybrid/reranking: chưa có upsert hybrid point qua pipeline, chưa tạo collection Qdrant named vector `dense`/`sparse`, chưa gọi `hybrid_retrieve()` từ API, chưa gọi `CrossEncoderReranker`, và chưa dùng `ContextBuilder` trong route chat. Phần retrieval dense-only, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
 
 Backend chạy bằng:
 

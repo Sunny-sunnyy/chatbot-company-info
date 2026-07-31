@@ -8,6 +8,7 @@
 - 2026-07-25 17:37 +07 - Bổ sung hướng dẫn sử dụng CodeGraph, kiểm tra đồng bộ index và ví dụ truy vấn cho coding agent.
 - 2026-07-25 20:22 +07 - Bổ sung quy tắc README phải giải thích vai trò, hàm/luồng chính và trạng thái chạy của từng file mã nguồn đã có code.
 - 2026-07-29 10:28 +07 - Bổ sung quy tắc đọc transcript giai đoạn nâng cao trong `tai_lieu/p2/<so_buoi>.txt`.
+- 2026-07-31 17:24 +07 - Bổ sung quy tắc khi viết README cho folder phải nêu rõ nhiệm vụ của từng file `.py` trong folder đó.
 
 ## Nội Dung Prompt Để Copy Sang Session Mới
 
@@ -32,6 +33,7 @@ Nhiệm vụ của bạn là đọc đúng các file cần thiết để nắm n
 - README của mỗi folder phải phản ánh đúng trạng thái mã nguồn và dữ liệu tại thời điểm kiểm tra.
 - README của mỗi folder phải mô tả nhiệm vụ của thư mục và nhiệm vụ hoặc trạng thái hiện tại của từng file trong thư mục đó, bao gồm cả file README của chính thư mục nếu file đó tồn tại.
 - Với folder có file mã nguồn, README phải có phần riêng tên `Nhiệm Vụ Các File Mã Nguồn` và mô tả từng file mã nguồn trong folder đó.
+- Khi folder có file `.py`, README của folder đó phải nêu rõ từng file `.py` chịu trách nhiệm làm gì. Với file `.py` có code, ghi trách nhiệm chính dựa trên code thật; với file `.py` rỗng, ghi rõ file đang rỗng hoặc chỉ là package marker và không chứa logic xử lý.
 - Với mỗi file mã nguồn đã có code, README cần giải thích thêm vai trò file, hàm hoặc luồng chính, input/output khi rõ ràng, và trạng thái chạy hiện tại nếu file hoặc flow chưa hoàn chỉnh.
 - Với file mã nguồn đang rỗng, README chỉ ghi rõ file đang rỗng và chưa được phát triển; không gán vai trò xử lý hoặc mô tả flow chưa tồn tại.
 - Nếu README lệch rõ ràng với code hiện tại, hãy báo ngắn rằng bạn sẽ cập nhật rồi tự sửa README.
@@ -178,6 +180,7 @@ Khi cập nhật README:
 - Liệt kê các file hiện có trong folder.
 - Mô tả nhiệm vụ hoặc trạng thái hiện tại của từng file trong folder, bao gồm cả file README của chính folder nếu có.
 - Nếu folder có file mã nguồn, thêm hoặc cập nhật phần `Nhiệm Vụ Các File Mã Nguồn`.
+- Nếu folder có file `.py`, trong phần `Nhiệm Vụ Các File Mã Nguồn` phải có mục riêng cho từng file `.py` và nêu rõ file đó chịu trách nhiệm làm gì trong project.
 - Với file mã nguồn đã có code, ngoài danh sách import/hàm hiện có, hãy bổ sung vai trò file, hàm hoặc luồng chính, input/output khi rõ ràng, và trạng thái chạy nếu code chưa import/chạy được nguyên vẹn.
 - Với file đã có code, mô tả chức năng thật dựa trên code.
 - Với file dữ liệu, mô tả dữ liệu thật dựa trên cấu trúc/count đã kiểm tra.

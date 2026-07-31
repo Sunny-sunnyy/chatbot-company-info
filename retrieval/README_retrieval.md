@@ -12,6 +12,8 @@
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_retriever.py`, lý thuyết BM25/hybrid retrieval, cách triển khai và ví dụ trong dự án.
 
 - 2026-07-31 16:21 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_retriever.py` trong luồng retrieval hybrid dense+BM25.
+- 2026-07-31 17:07 +07 - Cập nhật trạng thái sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả `context_builder.py` và ghi rõ luồng reranking/context builder chưa được API route gọi.
+- 2026-07-31 17:22 +07 - Bổ sung mô tả rõ trách nhiệm của từng file `.py` trong thư mục `retrieval`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -19,7 +21,7 @@ Thư mục `retrieval` chứa mã truy xuất tài liệu liên quan từ vector
 
 Tính tới sau buổi 7, thư mục này đã có code embedding query, truy vấn collection Qdrant và chuẩn hóa kết quả truy vấn thành document. `core/schema.py` đã định nghĩa `RetrievedDocument`, nên module retrieval hiện import được.
 
-Sau `tai_lieu/p2/7.txt`, repo đã có thêm `retrieval/hybrid_retriever.py` để kết hợp dense retrieval với BM25 score. Luồng API hiện tại vẫn chưa gọi hybrid retriever; route chat hiện vẫn dùng `retrieval/retriever.py`.
+Sau `tai_lieu/p2/7.txt` và `tai_lieu/p2/8.txt`, repo đã có thêm `retrieval/hybrid_retriever.py` để kết hợp dense retrieval với BM25 score. Sau `tai_lieu/p2/9.txt`, repo có thêm `retrieval/context_builder.py` để ghép document đã retrieval/rerank thành context cho LLM. Luồng API hiện tại vẫn chưa gọi hybrid retriever hoặc context builder; route chat hiện vẫn dùng `retrieval/retriever.py` và tự build context trong route.
 
 ## Lý Thuyết BM25 Và Hybrid Retrieval
 
@@ -58,6 +60,16 @@ File này mô tả nhiệm vụ của thư mục `retrieval`, trạng thái hi�
 ### `retriever.py`
 
 File này đã có mã nguồn.
+
+Trách nhiệm chính của file:
+
+- Thực hiện retrieval dense-only từ Qdrant.
+- Nhận query dạng text từ route chat hoặc module gọi retrieval.
+- Tạo dense embedding cho query bằng `embedding.embedder.embed_texts(...)`.
+- Truy vấn collection Qdrant đang cấu hình bằng query vector.
+- Lấy payload từ các point Qdrant trả về.
+- Chuẩn hóa kết quả thành `RetrievedDocument` để các bước phía sau có thể build context hoặc trả sources.
+- Xử lý lỗi kết nối Qdrant bằng `ConnectionError` khi gặp `ResponseHandlingException`.
 
 Nội dung hiện tại:
 
@@ -144,11 +156,43 @@ Trạng thái hiện tại:
 - Pipeline/upsert hiện chưa tạo collection/point hybrid tương ứng.
 - API route hiện chưa gọi `hybrid_retrieve()`, nên luồng chat đang chạy chưa dùng hybrid retriever.
 
+### `context_builder.py`
+
+File này đã có mã nguồn.
+
+Trách nhiệm chính của file:
+
+- Ghép danh sách `RetrievedDocument` thành một chuỗi context để truyền cho LLM.
+- Giới hạn số document đưa vào context bằng `max_documents`.
+- Giới hạn tổng độ dài context bằng `max_context_length`.
+- Bỏ qua document không có text sau khi strip.
+- Cắt phần text cuối nếu context sắp vượt quá giới hạn độ dài.
+- Ghép các phần context bằng `separator`, mặc định là `\n\n---\n\n`.
+
+Nội dung hiện tại:
+
+- Import `logging` và `List`.
+- Import `RetrievedDocument` từ `core.schema`.
+- Tạo logger tên `context_builder`.
+- Định nghĩa class `ContextBuilder`.
+- `ContextBuilder.__init__(max_documents=5, max_context_length=3000, separator="\n\n---\n\n")` lưu cấu hình build context.
+- `ContextBuilder.build(documents)` trả chuỗi context từ danh sách document.
+
+Vai trò và luồng hoạt động:
+
+- `ContextBuilder` nhận document đã được retrieval hoặc rerank.
+- `build(documents)` trả chuỗi rỗng nếu không có document.
+- Hàm duyệt tối đa `max_documents` document đầu tiên, lấy `document.text.strip()`, bỏ qua text rỗng, kiểm tra giới hạn `max_context_length`, cắt text nếu cần, rồi thêm vào `context_parts`.
+- Cuối cùng hàm join các phần bằng `separator`, log số document và số ký tự context đã build, rồi trả về context dạng `str`.
+- Input chính là `list[RetrievedDocument]`.
+- Output chính là `str` dùng làm context cho LLM.
+- Trạng thái hiện tại: file đã có code nhưng chưa được `api/routes/chat.py`, `api/routes/chat_openai.py` hoặc generator gọi.
+
 ### `__init__.py`
 
 File này hiện đang rỗng.
 
-File đánh dấu `retrieval` là Python package.
+File đánh dấu `retrieval` là Python package. File không chứa logic retrieval.
 
 ## Cách Hoạt Động Hiện Tại
 
@@ -162,7 +206,7 @@ Luồng retrieval dense-only theo code hiện tại:
 
 Luồng này hiện không còn dừng ở bước import schema. Khi chạy thật, kết quả phụ thuộc trạng thái Qdrant local và collection `nmk_chatbot_collection`.
 
-Luồng hybrid retrieval đã có code riêng trong `hybrid_retriever.py`, nhưng chưa được nối vào API.
+Luồng hybrid retrieval đã có code riêng trong `hybrid_retriever.py`, và context builder đã có code riêng trong `context_builder.py`, nhưng cả hai chưa được nối vào API.
 
 ## Ghi Chú Kỹ Thuật
 

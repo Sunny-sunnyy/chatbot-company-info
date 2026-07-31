@@ -6,6 +6,7 @@
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
 - 2026-07-30 12:20 +07 - Cập nhật mô tả cấu hình `dense_weight`, `bm25_weight` và logger `scoring` liên quan tới BM25/hybrid retrieval.
+- 2026-07-31 17:07 +07 - Cập nhật mô tả chi tiết cấu hình `reranking.model`, `reranking.device`, `reranking.top_k` và logger `reranking`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -56,6 +57,8 @@ Giá trị hiện tại đáng chú ý:
 - `retrieval.dense_weight`: `0.6`
 - `retrieval.bm25_weight`: `0.4`
 - `reranking.model`: `cross-encoder/ms-marco-MiniLM-L-6-v2`
+- `reranking.device`: `cpu`
+- `reranking.top_k`: `5`
 
 ### `logging.yaml`
 
@@ -80,7 +83,7 @@ Các logger đã được khai báo:
 - `reranking`
 - `chat`
 
-Logger `scoring` hiện phục vụ `scoring/bm25.py`. Hai key `retrieval.dense_weight` và `retrieval.bm25_weight` hiện được `retrieval/hybrid_retriever.py` dùng để tính `hybrid_score = dense_weight * dense_score + bm25_weight * bm25_score`.
+Logger `scoring` hiện phục vụ `scoring/bm25.py`. Logger `reranking` hiện phục vụ các module trong `reranking`. Hai key `retrieval.dense_weight` và `retrieval.bm25_weight` hiện được `retrieval/hybrid_retriever.py` dùng để tính `hybrid_score = dense_weight * dense_score + bm25_weight * bm25_score`. Nhóm `reranking` hiện chứa model CrossEncoder, thiết bị chạy và số document cuối cùng sau rerank.
 
 ## Cách Hoạt Động Hiện Tại
 
