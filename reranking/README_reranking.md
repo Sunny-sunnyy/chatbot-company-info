@@ -4,6 +4,7 @@
 
 - 2026-07-31 17:07 +07 - Tạo README cho thư mục `reranking` sau khi đọc `tai_lieu/p2/9.txt` và đối chiếu với mã nguồn reranking hiện tại.
 - 2026-07-31 17:22 +07 - Bổ sung mô tả rõ trách nhiệm của từng file `.py` trong thư mục `reranking`.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: reranker được khởi tạo trong `core/startup.py` và endpoint `/api/chat` dùng khi available.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -11,7 +12,7 @@ Thư mục `reranking` chứa code rerank danh sách document đã retrieval tr�
 
 Mục tiêu của reranking là nhận query và các `RetrievedDocument` từ retrieval, chấm điểm lại từng cặp query/document bằng CrossEncoder, sắp xếp document theo độ liên quan mới và trả về các document tốt nhất.
 
-Trạng thái hiện tại: thư mục đã có code reranking, nhưng API route hiện chưa gọi reranker này trong luồng chat.
+Trạng thái hiện tại: thư mục đã có code reranking. `core/startup.py` khởi tạo `CrossEncoderReranker` khi backend startup và endpoint `POST /api/chat` dùng reranker này nếu component đã sẵn sàng.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -84,7 +85,7 @@ Vai trò và luồng hoạt động:
 Trạng thái hiện tại:
 
 - File đã có code reranking bằng CrossEncoder.
-- File chưa được API route hoặc frontend gọi.
+- File được `core/startup.py` dùng để tạo reranker ở startup, và `api/routes/chat.py` gọi `reranker.rerank(...)` trong endpoint `POST /api/chat` nếu reranker không phải `None`.
 - Chưa có automated test riêng cho `CrossEncoderReranker`.
 
 ### `__init__.py`
@@ -112,7 +113,7 @@ Luồng reranking dự kiến theo code hiện có:
 5. Gọi `rerank(query, documents, top_k=...)`.
 6. Nhận lại document đã sort theo `rerank_score`.
 
-Luồng này hiện mới có ở mức module mã nguồn. API route hiện vẫn chưa gọi reranker.
+Luồng này hiện đã được nối vào endpoint `POST /api/chat` thông qua `core/startup.py`. Frontend mặc định vẫn gọi `POST /api/chat/openai`, nên UI hiện tại chưa đi qua reranker này.
 
 ## Ghi Chú Kỹ Thuật
 

@@ -4,6 +4,7 @@
 
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `frontend/lib` sau buổi 7, đối chiếu với API client hiện tại.
 - 2026-07-27 16:03 +07 - Cập nhật `api.ts` sau khi frontend chuyển sang gọi endpoint OpenRouter `POST /api/chat/openai` và bổ sung hướng dẫn đổi lại endpoint cũ.
+- 2026-08-01 17:58 +07 - Đối chiếu lại sau p2 hoàn chỉnh: `api.ts` vẫn gọi `/api/chat/openai`, chưa gọi `/api/chat` hybrid/reranker.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -56,6 +57,8 @@ Endpoint được gọi:
 POST /api/chat/openai
 GET /health
 ```
+
+Endpoint `/api/chat` của backend hiện đã dùng hybrid retrieval, BM25 và reranker, nhưng `api.ts` chưa gọi endpoint đó.
 
 ## Cách Đổi Lại Endpoint Cũ
 

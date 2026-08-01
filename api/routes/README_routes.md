@@ -4,12 +4,13 @@
 
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api/routes` sau buổi 7, đối chiếu với mã nguồn route hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả `chat_openai.py` và export `chat_openai_router` cho endpoint `POST /api/chat/openai`.
+- 2026-08-01 17:58 +07 - Cập nhật `chat.py` sau p2: route `/api/chat` dùng hybrid retrieval, BM25/reranker từ `core.startup` và rate limit in-memory.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `api/routes` chứa các route được đăng ký vào FastAPI app.
 
-Hiện tại thư mục có route chat legacy, route chat OpenRouter và file gom router để `api/app.py` import.
+Hiện tại thư mục có route chat hybrid dùng legacy generator, route chat OpenRouter dùng dense retriever, và file gom router để `api/app.py` import.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -26,24 +27,32 @@ File này đã có mã nguồn.
 Nội dung chính:
 
 - Import `APIRouter` và `HTTPException`.
+- Import `Request`.
 - Import `BaseModel` và `Field` từ Pydantic.
-- Import `retrieve` từ `retrieval.retriever`.
+- Import `hybrid_retrieve` từ `retrieval.hybrid_retriever`.
+- Import `get_bm25` và `get_reranker` từ `core.startup`.
 - Import `generate_answer` từ `llm.generator`.
 - Đọc `MAX_QUERY_LENGTH` từ biến môi trường, mặc định `500`.
+- Đọc `RATE_LIMIT_PER_MINUTE` từ biến môi trường, mặc định `60`.
+- Đọc `reranking.top_k` từ settings vào hằng `RERRANKING_TOP_K`.
 - Tạo dictionary `sessions` trong memory.
+- Tạo dictionary `rate_limit_storage` trong memory.
+- Định nghĩa helper `check_rate_limit(client_ip)`.
 - Định nghĩa Pydantic model `ChatRequest`.
 - Định nghĩa Pydantic model `ChatResponse`.
 - Định nghĩa endpoint `POST /chat`.
+- Định nghĩa hàm legacy CLI `chat(question: str)`.
 
 Vai trò và luồng hoạt động:
 
-- `chat.py` nhận câu hỏi từ frontend qua API.
+- `chat.py` nhận câu hỏi từ client qua API `POST /api/chat`.
 - `ChatRequest` nhận `query` và `session_id` tùy chọn.
 - `ChatResponse` trả `answer`, `sources` và `session_id`.
-- `chat_endpoint(request)` strip query, tạo session id nếu chưa có, gọi `retrieve(question)`, build context từ các document truy xuất được, gọi `generate_answer(context, question)`, rồi trả câu trả lời và sources.
+- `chat_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker, tự build context bằng `"\n\n".join(...)`, gọi `generate_answer(context, question)`, rồi trả câu trả lời và sources.
 - Input chính là JSON body dạng `{"query": "...", "session_id": "..."}`.
 - Output chính là JSON response theo `ChatResponse`.
-- Trạng thái hiện tại: file import được sau khi `core/schema.py` có `RetrievedDocument`. Khi chạy thật, route vẫn phụ thuộc Qdrant, embedding model và `llm/generator.py`.
+- Trạng thái hiện tại: file import được. Khi chạy thật, route phụ thuộc Qdrant collection hybrid có named vector `dense`, embedding model, BM25 đã được `core/startup.py` khởi tạo, reranker nếu có, và `llm/generator.py`.
+- Lưu ý tích hợp: `llm/generator.py` hiện chỉ hỗ trợ provider `ollama`, trong khi `config/settings.yaml` đang đặt `llm.provider: openrouter`.
 
 ### `__init__.py`
 
@@ -51,6 +60,7 @@ File này đã có mã nguồn.
 
 Nội dung chính:
 
+- Có docstring ngắn `API Routes for NMK Chatbot`.
 - Import `router` từ `api.routes.chat` thành `chat_router`.
 - Import `router` từ `api.routes.chat_openai` thành `chat_openai_router`.
 - Import `router` từ `api.health` thành `health_router`.
@@ -90,7 +100,7 @@ Vai trò và luồng hoạt động:
 
 ## Cách Hoạt Động Hiện Tại
 
-`api/app.py` đăng ký `chat_router` với prefix `/api`, nên endpoint chat đầy đủ là:
+`api/app.py` đăng ký `chat_router` với prefix `/api`, nên endpoint chat hybrid/legacy-generator đầy đủ là:
 
 ```text
 POST /api/chat
@@ -105,3 +115,7 @@ POST /api/chat/openai
 ## Ghi Chú Kỹ Thuật
 
 Session đang được lưu bằng dictionary trong memory của process Python. Dữ liệu session sẽ mất khi server restart.
+
+Rate limit của `chat.py` cũng đang lưu trong memory của process Python. Bộ đếm sẽ mất khi server restart và không chia sẻ giữa nhiều process.
+
+Frontend hiện gọi `POST /api/chat/openai` trong `frontend/lib/api.ts`, không gọi `POST /api/chat`.

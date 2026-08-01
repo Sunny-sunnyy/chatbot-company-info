@@ -23,12 +23,16 @@
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: bổ sung mô tả sparse embedding, ghi nhận `embedding/sparse_embedder.py`, cập nhật trạng thái dữ liệu raw/processed và trạng thái CodeGraph hiện tại.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_index.py`, `hybrid_retriever.py`, `scoring/bm25.py`, lý thuyết BM25/hybrid retrieval và trạng thái CodeGraph mới nhất.
 - 2026-07-31 17:07 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả hybrid retriever có BM25, folder `reranking`, `retrieval/context_builder.py` và trạng thái CodeGraph mới nhất.
+- 2026-08-01 16:51 +07 - Cập nhật trạng thái khi đang ở `tai_lieu/p2/10.txt`: bổ sung `core/startup.py`, chuyển vectorstore/upsert sang hybrid dense+sparse và ghi nhận rủi ro collection Qdrant cũ dense-only trước khi chạy pipeline.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau khi hoàn thành toàn bộ p2: API startup khởi tạo RAG components, `/api/chat` dùng hybrid retrieval + reranker, `/api/chat/openai` vẫn dùng dense retrieval + OpenRouter và frontend vẫn gọi endpoint OpenRouter.
 
 ## Mốc Học Hiện Tại
 
-Dự án hiện đã hoàn thành giai đoạn 1 sau buổi 7 và đang ở branch `UpdateV2` của giai đoạn nâng cao.
+Dự án hiện đã hoàn thành giai đoạn 1 sau buổi 7 và đã đi hết các transcript giai đoạn nâng cao trong `tai_lieu/p2/0.txt` tới `tai_lieu/p2/10.txt`.
 
 `tai_lieu/p2/0.txt` là bài giới thiệu của giai đoạn nâng cao. Nội dung bài này mô tả mục tiêu cải tiến chatbot hiện tại để trả lời nhanh hơn, đầy đủ hơn và có trải nghiệm tốt hơn so với bản cơ bản sau giai đoạn 1. Các nhóm cải tiến được giới thiệu gồm cải tiến chunking, chia chunk lớn thành chunk nhỏ hơn, bổ sung hướng embedding nâng cao, xem xét lại vector store, cải tiến retrieval và hoàn thiện trải nghiệm chat.
+
+`tai_lieu/p2/1.txt` là bài phân tích và thiết kế lại chunking nâng cao. Nội dung bài tập trung vào việc tách chunk lớn thành các chunk nhỏ hơn theo ý nghĩa, giữ metadata nền, đánh `chunk_id`, dùng `chunk_type` và `priority`, chia description dài thành đoạn nhỏ để retrieval truy xuất đúng phần người dùng hỏi thay vì đọc toàn bộ project/news.
 
 `tai_lieu/p2/2.txt` là bài hoàn thiện code chunking và đánh giá point dữ liệu. Nội dung bài tập trung vào việc làm gọn chunking, tách chunk theo ngữ nghĩa nhỏ hơn, dùng metadata nền, thêm `chunk_id`, `chunk_type`, `priority`, chia text dài bằng `split_paragraphs()` và bỏ `heroSlides` khỏi pipeline vì loại dữ liệu này dễ gây nhiễu retrieval.
 
@@ -48,7 +52,9 @@ Tại thời điểm cập nhật sau `p2/2`, phần chunking trong code đã c�
 
 `tai_lieu/p2/9.txt` là bài hoàn thiện reranking và context builder để chuẩn bị context cho LLM. Nội dung bài tạo base reranker, CrossEncoder model wrapper, CrossEncoder reranker để chấm điểm cặp query/document, sort/cắt top document, và `ContextBuilder` để ghép document thành context có giới hạn số document, giới hạn độ dài và separator.
 
-Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, reranking bằng CrossEncoder, context builder, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `scoring/bm25.py` đã có class `BM25`, `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`, `reranking` đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker`, còn `retrieval/context_builder.py` đã có class `ContextBuilder`. Tuy nhiên luồng chạy chính hiện vẫn chưa gọi các module hybrid/reranking/context builder này: `ingestion/pipeline.py` vẫn gọi `upsert_chunks()`, `vectorstore/upsert.py` vẫn gọi `build_qdrant_points()` dense-only, `vectorstore/qdrant.py` vẫn tạo collection dense-only, và API route hiện vẫn gọi `retrieval/retriever.py` rồi tự build context trong route chứ chưa gọi `hybrid_retrieve()`, reranker hoặc `ContextBuilder`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant. Sau cập nhật `p2/2`, code chunking hiện tạo 450 chunk khi chỉ chạy các hàm chunking, nhưng pipeline chưa được chạy lại để upsert bộ point mới vào Qdrant trong phiên kiểm tra này. `chat.py` ở thư mục gốc đã được xoá; luồng chat legacy hiện nằm trong `api/routes/chat.py`, còn luồng OpenRouter mới nằm trong `api/routes/chat_openai.py`.
+`tai_lieu/p2/10.txt` là bài hoàn thiện chatbot với các cải tiến và sửa lỗi. Phần đã phản ánh trong code hiện tại gồm tạo `core/startup.py` để khởi tạo `SparseEmbedder`, `BM25` và `CrossEncoderReranker` từ corpus trong Qdrant; sửa `vectorstore/qdrant.py` để tạo collection kiểu hybrid có named vector `dense` và sparse vector `sparse` khi collection chưa tồn tại; sửa `vectorstore/upsert.py` để fit `SparseEmbedder`, gọi `init_sparse_embedder(...)`, build hybrid point bằng `build_hybrid_qdrant_points(...)` và upsert hybrid points; sửa `api/app.py` để gọi `initialize_rag_components()` trong lifespan startup; sửa `api/health.py` để trả trạng thái RAG components; và sửa `api/routes/chat.py` để dùng `hybrid_retrieve()`, BM25, reranker và rate limit in-memory.
+
+Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, reranking bằng CrossEncoder, context builder, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `vectorstore/upsert.py` hiện đã gọi luồng build hybrid point, `vectorstore/qdrant.py` hiện tạo collection hybrid khi collection chưa tồn tại, `scoring/bm25.py` đã có class `BM25`, `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`, `reranking` đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker`, còn `retrieval/context_builder.py` đã có class `ContextBuilder`. `api/app.py` hiện gọi `initialize_rag_components()` lúc startup. Endpoint `POST /api/chat` đã dùng hybrid retriever, BM25 và reranker, nhưng vẫn tự ghép context trong route và vẫn gọi legacy `llm/generator.py`. Endpoint `POST /api/chat/openai` vẫn dùng `retrieval/retriever.py` dense-only và `llm/generator_openai.py`. Frontend hiện gọi `POST /api/chat/openai`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant theo schema cũ. Sau cập nhật `p2/10`, pipeline sẽ upsert hybrid points; nếu Qdrant đang giữ collection cũ dense-only thì cần xoá/tạo lại collection trước khi chạy để schema khớp named vector `dense` và sparse vector `sparse`. `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `api/routes/chat.py` và `api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
@@ -63,7 +69,7 @@ Dự án hiện đi theo hướng RAG, không phải fine-tuning. Dữ liệu đ
 Các thư mục chính hiện có:
 
 - `config`: chứa cấu hình YAML cho ứng dụng và logging.
-- `core`: chứa mã dùng chung để đọc settings và cấu hình logging.
+- `core`: chứa mã dùng chung để đọc settings, cấu hình logging, schema dùng chung và startup helper cho BM25/reranker.
 - `api`: chứa FastAPI backend, health check, chat route legacy và chat route OpenRouter.
 - `data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
 - `frontend`: chứa frontend Next.js, React, TypeScript và Tailwind CSS cho giao diện chat.
@@ -71,7 +77,7 @@ Các thư mục chính hiện có:
 - `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu đang dùng; `heroSlides.py` đã bị xoá khỏi code chunking hiện tại.
 - `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
 - `embedding`: chứa mã load model dense embedding, tạo embedding theo batch và sparse embedder dựa trên token/TF-IDF.
-- `vectorstore`: chứa code kết nối Qdrant, tạo collection dense-only, build point dense-only, build point hybrid và upsert chunk vào Qdrant.
+- `vectorstore`: chứa code kết nối Qdrant, tạo collection hybrid khi collection chưa tồn tại, build point dense-only cũ, build point hybrid và upsert chunk vào Qdrant.
 - `retrieval`: chứa code truy vấn Qdrant bằng dense embedding query, code hybrid retriever có BM25 score và chuẩn hóa kết quả về `RetrievedDocument`.
 - `scoring`: chứa code tính điểm BM25 cho query/document.
 - `reranking`: chứa code rerank document bằng CrossEncoder trước khi build context cho LLM.
@@ -90,11 +96,13 @@ Các thư mục chính hiện có:
 
 `core/schema.py` đã có dataclass `RetrievedDocument`. Schema này gồm `id`, `score`, `text` và `metadata`, đang được `retrieval/retriever.py` dùng để chuẩn hóa kết quả truy vấn từ Qdrant.
 
-`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, cấu hình CORS, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `localhost`, port `8000` và không bật reload.
+`core/startup.py` đã có các hàm `initialize_rag_components()`, `get_bm25()`, `get_reranker()` và `get_initialization_status()`. File này load corpus từ Qdrant bằng `client.scroll(...)`, fit `SparseEmbedder`, khởi tạo `BM25`, tính average document length, khởi tạo `CrossEncoderModel` và bọc bằng `CrossEncoderReranker`. Trạng thái hiện tại: `api/app.py` gọi `initialize_rag_components()` trong lifespan startup; `api/health.py` gọi `get_initialization_status()`; `api/routes/chat.py` gọi `get_bm25()` và `get_reranker()`. File phụ thuộc Qdrant đã có collection/points và có thể load CrossEncoder model thật khi `initialize_rag_components()` chạy.
 
-`api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model và trả cấu hình LLM provider/model. Health check này có thể load embedding model khi được gọi.
+`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, định nghĩa lifespan startup/shutdown, gọi `initialize_rag_components()` khi startup, cấu hình CORS, thêm middleware `track_response_time` để gắn header `X-Response-Time`, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `0.0.0.0`, port `8000` và bật `reload=True`.
 
-`api/routes/chat.py` đã có endpoint `POST /chat`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat`. Route nhận `query` và `session_id`, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `generate_answer(context, question)`, lưu session trong memory và trả `answer`, `sources`, `session_id`.
+`api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model, trả cấu hình LLM provider/model và trả trạng thái RAG components từ `core.startup.get_initialization_status()`. Health check này có thể load embedding model khi được gọi.
+
+`api/routes/chat.py` đã có endpoint `POST /chat`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat`. Route nhận `query` và `session_id`, kiểm tra rate limit in-memory theo IP, lấy BM25/reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu reranker sẵn sàng, tự build context từ document truy xuất được, gọi `generate_answer(context, question)` từ legacy `llm/generator.py`, lưu session trong memory và trả `answer`, `sources`, `session_id`. Với cấu hình hiện tại `llm.provider: openrouter`, route này vẫn phụ thuộc điểm lưu ý là `llm/generator.py` chỉ hỗ trợ provider `ollama`.
 
 `api/routes/chat_openai.py` đã có endpoint `POST /chat/openai`. Vì `api/app.py` đăng ký router với prefix `/api`, endpoint đầy đủ là `POST /api/chat/openai`. Route này giữ schema riêng, nhận `query` và `session_id`, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `await generate_answer_async(context, question)` từ `llm/generator_openai.py`, lưu session trong memory và trả `answer`, `sources`, `session_id`.
 
@@ -120,29 +128,29 @@ Các thư mục chính hiện có:
 
 `embedding/batch_embed.py` đã có hàm `batch_embed_texts()`. File này đọc `embedding.batch_size` từ settings, chia danh sách text thành batch, gọi `embed_texts()` cho từng batch và gộp kết quả embedding.
 
-`embedding/sparse_embedder.py` đã có hàm `tokenize()` và class `SparseEmbedder`. `tokenize(text)` chuyển text về chữ thường, bỏ ký tự đặc biệt bằng regex và tách token bằng khoảng trắng. `SparseEmbedder` lưu `vocabulary`, `document_frequency` và `num_documents`; `fit(texts)` xây vocabulary và document frequency từ danh sách text; `encode(text)` trả sparse vector dạng dictionary gồm `indices` và `values`; `encode_batch(texts)` encode nhiều text bằng cách gọi `encode()` cho từng phần tử. File này hiện được `vectorstore/hybrid_index.py` dùng để build sparse vector và được `scoring/bm25.py` dùng cho tokenization, vocabulary, document frequency và document count. Tuy nhiên luồng ingestion/retrieval chính vẫn dense-only vì pipeline, upsert, collection Qdrant và API route chưa chuyển sang hybrid.
+`embedding/sparse_embedder.py` đã có hàm `tokenize()` và class `SparseEmbedder`. `tokenize(text)` chuyển text về chữ thường, bỏ ký tự đặc biệt bằng regex và tách token bằng khoảng trắng. `SparseEmbedder` lưu `vocabulary`, `document_frequency` và `num_documents`; `fit(texts)` xây vocabulary và document frequency từ danh sách text; `encode(text)` trả sparse vector dạng dictionary gồm `indices` và `values`; `encode_batch(texts)` encode nhiều text bằng cách gọi `encode()` cho từng phần tử. File này hiện được `vectorstore/hybrid_index.py` dùng để build sparse vector, được `vectorstore/upsert.py` fit trên corpus chunk trước khi upsert hybrid points, được `core/startup.py` fit lại từ corpus Qdrant để khởi tạo BM25, và được `scoring/bm25.py` dùng cho tokenization, vocabulary, document frequency và document count.
 
-`vectorstore/qdrant.py` đã có hàm `get_qdrant_client()` và `ensure_collection()`. File này đọc cấu hình Qdrant từ settings, tạo `QdrantClient`, kiểm tra kết nối bằng `get_collections()`, và tạo collection dense-only bằng `VectorParams` nếu collection chưa tồn tại.
+`vectorstore/qdrant.py` đã có hàm `get_qdrant_client()` và `ensure_collection()`. File này đọc cấu hình Qdrant từ settings, tạo `QdrantClient`, kiểm tra kết nối bằng `get_collections()`, và tạo collection hybrid nếu collection chưa tồn tại. Collection mới dùng named vector `dense` với `VectorParams` và sparse vector `sparse` với `SparseVectorParams`. Trạng thái hiện tại: nếu collection `nmk_chatbot_collection` đã tồn tại từ luồng dense-only cũ, `ensure_collection()` chỉ log rồi trả về, không tự migrate schema.
 
 `vectorstore/index.py` đã có hàm `build_qdrant_points()`. File này lấy text từ các chunk, gọi `embedding.embedder.embed_texts()` để tạo embedding, rồi build point dictionary gồm `id`, `vector` và `payload`.
 
-`vectorstore/upsert.py` đã có hàm `upsert_chunks()`. File này lấy Qdrant client, đảm bảo collection tồn tại, gọi `build_qdrant_points(chunks)` để tạo dense-only point và gọi `client.upsert(...)`.
+`vectorstore/upsert.py` đã có hàm `upsert_chunks()`. File này lấy Qdrant client, đảm bảo collection tồn tại, fit `SparseEmbedder` trên toàn bộ `chunk["text"]`, gọi `init_sparse_embedder(...)`, gọi `build_hybrid_qdrant_points(chunks)` để tạo point có named vector `dense` và `sparse`, rồi gọi `client.upsert(...)`.
 
-`vectorstore/hybrid_index.py` đã có hàm `init_sparse_embedder(embedder)` và `build_hybrid_qdrant_points(chunks)`. File này nhận `SparseEmbedder` đã fit sẵn, tạo dense embedding bằng `embed_texts(texts)`, tạo sparse embedding bằng `_sparse_embedder.encode_batch(texts)`, rồi build `PointStruct` có named vector `dense` và `sparse`. Trạng thái hiện tại: file đã có code nhưng chưa được `vectorstore/upsert.py` hoặc `ingestion/pipeline.py` gọi; collection hiện tại cũng chưa được tạo theo cấu hình named vectors/sparse vector trong `vectorstore/qdrant.py`.
+`vectorstore/hybrid_index.py` đã có hàm `init_sparse_embedder(embedder)` và `build_hybrid_qdrant_points(chunks)`. File này nhận `SparseEmbedder` đã fit sẵn, tạo dense embedding bằng `embed_texts(texts)`, tạo sparse embedding bằng `_sparse_embedder.encode_batch(texts)`, rồi build `PointStruct` có named vector `dense` và `sparse`. Trạng thái hiện tại: file đang được `vectorstore/upsert.py` gọi khi pipeline upsert chunks.
 
 `retrieval/retriever.py` đã có hàm `retrieve(query)`. File này embedding câu hỏi bằng `embed_texts([query])`, truy vấn Qdrant bằng `client.query_points(...)`, lấy payload gồm `text` và metadata, rồi chuẩn hóa kết quả về `RetrievedDocument`. Sau buổi 7, module này đã import được vì `core/schema.py` đã có `RetrievedDocument`.
 
-`retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`. File này embedding query thành dense vector, truy vấn Qdrant bằng named vector `dense` với `limit=TOP_K * 3`, tính `bm25.score(query, text)` cho từng payload text, rồi tính `hybrid_score = DENSE_WEIGHT * dense_score + BM25_WEIGHT * bm25_score`. Metadata trả về có thêm `dense_score` và `bm25_score`. Trạng thái hiện tại: file đã có code nhưng chưa được API route hoặc frontend gọi.
+`retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`. File này embedding query thành dense vector, truy vấn Qdrant bằng named vector `dense` với `limit=TOP_K * 3`, tính `bm25.score(query, text)` cho từng payload text, rồi tính `hybrid_score = DENSE_WEIGHT * dense_score + BM25_WEIGHT * bm25_score`. Metadata trả về có thêm `dense_score` và `bm25_score`. Trạng thái hiện tại: endpoint `POST /api/chat` đã gọi file này; endpoint `POST /api/chat/openai` và frontend mặc định vẫn chưa gọi file này.
 
-`retrieval/context_builder.py` đã có class `ContextBuilder`. Class này nhận `max_documents`, `max_context_length` và `separator`; hàm `build(documents)` lấy tối đa số document cấu hình, bỏ qua document rỗng, cắt text nếu context vượt giới hạn độ dài, ghép các phần bằng separator và trả về chuỗi context. Trạng thái hiện tại: file đã có code nhưng chưa được API route hoặc generator gọi.
+`retrieval/context_builder.py` đã có class `ContextBuilder`. Class này nhận `max_documents`, `max_context_length` và `separator`; hàm `build(documents)` lấy tối đa số document cấu hình, bỏ qua document rỗng, cắt text nếu context vượt giới hạn độ dài, ghép các phần bằng separator và trả về chuỗi context. Trạng thái hiện tại: file đã có code nhưng chưa được API route hoặc generator gọi; `api/routes/chat.py` vẫn tự ghép context bằng `"\n\n".join(...)`.
 
-`scoring/bm25.py` đã có class `BM25`. Class này nhận `SparseEmbedder` đã fit, đọc `vocabulary`, `document_frequency` và `num_documents`, có `compute_average_document_length(documents)` để tính độ dài document trung bình, `score(query, document)` để tính BM25 score giữa một query và một document, và `score_batch(query, documents)` để tính nhiều document. Trạng thái hiện tại: file được `retrieval/hybrid_retriever.py` import, nhưng chưa có luồng end-to-end đang gọi hybrid retriever từ API.
+`scoring/bm25.py` đã có class `BM25`. Class này nhận `SparseEmbedder` đã fit, đọc `vocabulary`, `document_frequency` và `num_documents`, có `compute_average_document_length(documents)` để tính độ dài document trung bình, `score(query, document)` để tính BM25 score giữa một query và một document, và `score_batch(query, documents)` để tính nhiều document. Trạng thái hiện tại: file được `core/startup.py` khởi tạo và được `retrieval/hybrid_retriever.py` dùng trong endpoint `POST /api/chat`.
 
 `reranking/base.py` đã có class `BaseReranker` với method `rerank(query, documents, top_k=None)` raise `NotImplementedError`, đóng vai trò interface chung cho các reranker.
 
 `reranking/models/cross_encoder.py` đã có class `CrossEncoderModel`. Class này load `sentence_transformers.CrossEncoder` theo `model_name` và `device`, rồi có method `score_batch(pairs)` để chấm điểm danh sách cặp `(query, document_text)`.
 
-`reranking/reranker.py` đã có class `CrossEncoderReranker` kế thừa `BaseReranker`. Class này nhận `CrossEncoderModel`, tạo các cặp `(query, doc.text)`, gọi `score_batch(...)`, ghi `rerank_score` vào metadata từng document, sort document theo `rerank_score` giảm dần, cắt `top_k` nếu được truyền và trả về list `RetrievedDocument`. Trạng thái hiện tại: folder `reranking` đã có code nhưng chưa được API route hoặc frontend gọi.
+`reranking/reranker.py` đã có class `CrossEncoderReranker` kế thừa `BaseReranker`. Class này nhận `CrossEncoderModel`, tạo các cặp `(query, doc.text)`, gọi `score_batch(...)`, ghi `rerank_score` vào metadata từng document, sort document theo `rerank_score` giảm dần, cắt `top_k` nếu được truyền và trả về list `RetrievedDocument`. Trạng thái hiện tại: `core/startup.py` khởi tạo reranker và endpoint `POST /api/chat` gọi `reranker.rerank(...)` nếu reranker sẵn sàng; frontend mặc định vẫn gọi endpoint OpenRouter không dùng reranker này.
 
 `llm/prompt.py` đã có `SYSTEM_PROMPT` và hàm `build_prompt(context, question)`. File này tạo prompt tiếng Việt cho chatbot NMK Architects, yêu cầu trả lời dựa trên context và không tự bịa thông tin ngoài dữ liệu.
 
@@ -207,6 +215,23 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_
 ```
 
 Kết quả: `ingestion.pipeline import ok`.
+
+Sau khi cập nhật code ở `p2/10`, kiểm tra tĩnh và import tối thiểu trước đó đã chạy thành công:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile core/startup.py vectorstore/qdrant.py vectorstore/upsert.py vectorstore/hybrid_index.py ingestion/pipeline.py retrieval/hybrid_retriever.py
+UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('ingestion.pipeline'); print('ingestion.pipeline import ok')"
+```
+
+Kết quả: các file compile được và `ingestion.pipeline` import được.
+
+Người dùng đã chạy Qdrant bằng Docker Compose và chạy lại pipeline hybrid. Log chạy pipeline đã build 450 hybrid Qdrant points nhưng upsert bị Qdrant trả lỗi:
+
+```text
+Wrong input: Not existing vector name error: sparse
+```
+
+Nguyên nhân khớp với code hiện tại: collection `nmk_chatbot_collection` đã tồn tại từ luồng dense-only cũ, trong khi `ensure_collection()` không tự migrate collection đã tồn tại. Khi `upsert.py` gửi point có named vector `sparse`, collection cũ không có vector name này nên Qdrant trả `400 Bad Request`.
 
 Kiểm tra số chunk hiện tại bằng cách gọi trực tiếp các hàm chunking, không upsert Qdrant, cho kết quả:
 
@@ -293,7 +318,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-07-31 17:07 +07, `codegraph status .` ghi nhận index hiện có 62 files, 436 nodes, 674 edges, DB size 1.00 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-08-01 17:58 +07, `codegraph status .` ghi nhận index hiện có 63 files, 478 nodes, 773 edges, DB size 1.08 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -319,7 +344,7 @@ Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` tr
 
 Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, rồi chuẩn bị point dense-only để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/8`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Sau `p2/9`, repo có thêm folder `reranking` và `retrieval/context_builder.py`. Tuy nhiên luồng ingestion/API hiện tại vẫn chưa chuyển sang hybrid/reranking: chưa có upsert hybrid point qua pipeline, chưa tạo collection Qdrant named vector `dense`/`sparse`, chưa gọi `hybrid_retrieve()` từ API, chưa gọi `CrossEncoderReranker`, và chưa dùng `ContextBuilder` trong route chat. Phần retrieval dense-only, schema, API backend, frontend và luồng OpenRouter mới đã có mã. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, fit sparse embedder trên corpus chunk và build point hybrid dense+sparse để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/8`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Sau `p2/9`, repo có thêm folder `reranking` và `retrieval/context_builder.py`. Sau `p2/10`, `vectorstore/upsert.py` đã chuyển sang build/upsert hybrid points, `vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `core/startup.py` khởi tạo sparse embedder/BM25/reranker từ Qdrant lúc backend startup, và endpoint `POST /api/chat` dùng hybrid retrieval + reranker. `ContextBuilder` vẫn chưa được route dùng. Endpoint `POST /api/chat/openai` vẫn dùng retrieval dense-only và OpenRouter. Frontend hiện gọi endpoint OpenRouter. Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
 
 Backend chạy bằng:
 
@@ -327,7 +352,7 @@ Backend chạy bằng:
 uv run python -m api.app
 ```
 
-Lệnh này hiện không bật Uvicorn reload, nên không còn WatchFiles theo dõi toàn bộ repo trong lúc chạy song song frontend.
+Lệnh này hiện bật Uvicorn `reload=True` trong `api/app.py` và bind `0.0.0.0:8000`.
 
 Frontend chạy trong terminal riêng bằng:
 

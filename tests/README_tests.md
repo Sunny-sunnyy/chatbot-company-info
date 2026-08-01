@@ -4,6 +4,7 @@
 
 - 2026-07-27 16:03 +07 - Tạo README cho thư mục `tests` sau khi thêm automated tests cho luồng OpenRouter isolated path.
 - 2026-07-27 17:04 +07 - Cập nhật mô tả test generator sau khi bổ sung kiểm tra cấu hình tắt OpenRouter reasoning bằng `ModelSettings.extra_body`.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái test sau p2 hoàn chỉnh: test hiện có vẫn chỉ bao phủ luồng OpenRouter isolated path, chưa có test cho `/api/chat` hybrid/reranker.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -63,3 +64,5 @@ UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_llm_generator_openai.py test
 ## Ghi Chú Kỹ Thuật
 
 E2E thật với Qdrant, backend, frontend và OpenRouter không nằm trong automated tests hiện tại. Luồng đó cần chạy thủ công bằng nhiều terminal để kiểm tra toàn bộ ứng dụng.
+
+Endpoint `POST /api/chat` sau p2 đã dùng hybrid retrieval, BM25 và reranker, nhưng hiện chưa có automated test riêng trong thư mục `tests`.

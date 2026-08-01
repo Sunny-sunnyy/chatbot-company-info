@@ -11,6 +11,8 @@
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của các file mã nguồn trong thư mục `ingestion`.
 - 2026-07-26 12:23 +07 - Cập nhật trạng thái sau buổi 5: pipeline đã chạy thành công bằng `uv run python -m ingestion.pipeline` và upsert 450 chunks vào Qdrant.
 - 2026-07-29 20:56 +07 - Cập nhật trạng thái sau `tai_lieu/p2/2.txt`: pipeline không còn gọi hero slides, sửa import `interiorStyles.py` và kiểm tra số chunk hiện tại trước upsert.
+- 2026-08-01 16:51 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/10.txt`: `pipeline.py` vẫn gom chunk như cũ nhưng `upsert_chunks()` hiện chuyển sang build/upsert hybrid points.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: pipeline đi qua `upsert_chunks()` hybrid; lỗi Qdrant `Not existing vector name error: sparse` là do collection cũ chưa có sparse vector.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -80,13 +82,13 @@ Nội dung hiện tại:
 
 Hàm `run_ingestion_pipeline()` hiện tạo list `all_chunks`, gọi các hàm chunking cho architecture types, company info, interior styles, news categories, news, project categories và projects, sau đó gọi `upsert_chunks(all_chunks)` nếu có chunk. Pipeline hiện không còn gọi `chunk_hero_slides()`.
 
-Trạng thái hiện tại của file này đã được người dùng chạy thành công bằng:
+Lệnh chạy file này từ thư mục gốc:
 
 ```bash
 uv run python -m ingestion.pipeline
 ```
 
-Log chạy thực tế sau buổi 5 ghi nhận pipeline đã upsert 450 chunks vào vector store. Sau cập nhật `p2/2`, phiên kiểm tra tài liệu này chỉ kiểm tra import pipeline và số chunk từ các hàm chunking, chưa chạy lại upsert Qdrant.
+Log chạy thực tế sau buổi 5 ghi nhận pipeline đã upsert 450 chunks vào vector store bằng luồng dense-only thời điểm đó. Sau cập nhật `p2/10`, `pipeline.py` vẫn gom chunk như cũ nhưng `vectorstore/upsert.py` đã chuyển sang fit `SparseEmbedder` và upsert hybrid points dense+sparse.
 
 Vai trò và luồng hoạt động:
 
@@ -96,7 +98,7 @@ Vai trò và luồng hoạt động:
 - File này đã bỏ import và bỏ gọi chunking hero slides.
 - Nếu `all_chunks` rỗng, pipeline log warning và dừng.
 - Nếu có chunk, pipeline gọi `upsert_chunks(all_chunks)` để chuyển dữ liệu sang vector store.
-- Trạng thái kiểm tra hiện tại: `ingestion.pipeline` import được bằng `uv run`. Lệnh gọi trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert. Pipeline chưa được chạy lại để upsert bộ chunk sau `p2/2` trong phiên kiểm tra này.
+- Trạng thái kiểm tra hiện tại: `ingestion.pipeline` import được bằng `uv run`. Lệnh gọi trực tiếp các hàm chunking trước đó tạo tổng cộng 450 chunks trước khi upsert. Sau cập nhật `p2/10`, pipeline tạo/upsert hybrid points qua `vectorstore/upsert.py`; để chạy thật cần Qdrant collection đúng schema hybrid.
 
 ### `__init__.py`
 
@@ -146,7 +148,7 @@ Luồng ingestion đã có ở mức mã nguồn:
 5. Các file trong `ingestion/chunking` đọc dữ liệu từ `data/processed` và trả về list chunk. Sau `p2/2`, `heroSlides.json` không còn có module chunking tương ứng và không còn được đưa vào pipeline.
 6. `pipeline.py` gom chunk từ nhiều hàm chunking.
 7. `pipeline.py` gọi `upsert_chunks`.
-8. `vectorstore/upsert.py` đảm bảo collection Qdrant tồn tại, build dense-only point và upsert point vào Qdrant.
+8. `vectorstore/upsert.py` đảm bảo collection Qdrant tồn tại, fit `SparseEmbedder`, build hybrid point có named vector `dense` và `sparse`, rồi upsert point vào Qdrant.
 
 Sau buổi 5, luồng này đã chạy thành công với Qdrant local. Log chạy thực tế ghi nhận:
 
@@ -157,6 +159,21 @@ Sau buổi 5, luồng này đã chạy thành công với Qdrant local. Log ch�
 - 450 chunks được upsert vào vector store.
 
 Trong lúc chạy có warning `Empty text provided to split_paragraphs` cho một số bản ghi thiếu text để chia đoạn. Warning này không làm pipeline dừng.
+
+Sau cập nhật `p2/10`, kiểm tra tĩnh hiện tại đã pass:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile core/startup.py vectorstore/qdrant.py vectorstore/upsert.py vectorstore/hybrid_index.py ingestion/pipeline.py retrieval/hybrid_retriever.py
+UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('ingestion.pipeline'); print('ingestion.pipeline import ok')"
+```
+
+Nếu collection cũ dense-only vẫn tồn tại trong Qdrant local, pipeline hybrid có thể lỗi:
+
+```text
+Wrong input: Not existing vector name error: sparse
+```
+
+Nguyên nhân là `ensure_collection()` chỉ bỏ qua khi collection đã tồn tại, không tự migrate schema. Cần xoá collection cũ hoặc đổi tên collection, rồi chạy lại pipeline để Qdrant tạo collection có named vector `dense` và sparse vector `sparse`.
 
 Sau cập nhật `p2/2`, kiểm tra không upsert bằng cách gọi trực tiếp các hàm chunking cho kết quả:
 

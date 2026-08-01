@@ -21,6 +21,8 @@
 - 2026-07-30 10:54 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: sparse embedding, dữ liệu raw mới trùng nội dung với raw cũ, `heroSlides.json` không còn dùng trong pipeline và trạng thái CodeGraph mới nhất.
 - 2026-07-30 12:20 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: hybrid index, BM25 scorer, hybrid retriever và trạng thái chưa nối vào pipeline/API.
 - 2026-07-31 17:07 +07 - Cập nhật mô tả `Project_status.md` sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: hybrid retriever có BM25, folder `reranking`, `retrieval/context_builder.py` và trạng thái chưa nối vào API.
+- 2026-08-01 16:51 +07 - Cập nhật mô tả `Project_status.md` sau khi đọc `tai_lieu/p2/10.txt`: `core/startup.py`, vectorstore/upsert hybrid và lưu ý collection Qdrant cũ dense-only.
+- 2026-08-01 17:58 +07 - Cập nhật mô tả `Project_status.md` sau khi hoàn thành p2: API startup khởi tạo RAG components, `/api/chat` dùng hybrid/reranker, frontend vẫn gọi `/api/chat/openai`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -52,15 +54,17 @@ Nội dung hiện có:
 - Trạng thái frontend hiện gọi endpoint OpenRouter mới và có hướng dẫn đổi lại endpoint cũ trong README frontend.
 - Trạng thái automated tests mới trong thư mục `tests`.
 - Trạng thái tắt OpenRouter reasoning trong `llm/generator_openai.py`.
-- Trạng thái `uv run python -m api.app` không còn bật Uvicorn reload.
+- Trạng thái `uv run python -m api.app` hiện bind `0.0.0.0:8000` và bật Uvicorn `reload=True` theo code hiện tại.
 - Chuẩn README hiện tại cho các folder có file Python thật.
 - Mốc bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo bài giới thiệu `tai_lieu/p2/0.txt`, đồng thời phân biệt rõ nội dung định hướng với trạng thái code đã triển khai.
 - Mốc sau `tai_lieu/p2/2.txt`: code chunking hiện đã bỏ `heroSlides.py`, pipeline không còn gọi hero slides, các chunk còn lại dùng metadata có `chunk_id`, `chunk_type` và `priority`, và kiểm tra trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert.
 - Mốc sau `tai_lieu/p2/3.txt` và `tai_lieu/p2/4.txt`: repo có `embedding/sparse_embedder.py` với `tokenize()` và `SparseEmbedder`.
-- Mốc sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: repo có `vectorstore/hybrid_index.py`, `scoring/bm25.py` và `retrieval/hybrid_retriever.py`; pipeline và API hiện vẫn chưa chuyển sang hybrid.
-- Mốc sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: repo có `retrieval/hybrid_retriever.py` trộn dense score với BM25 score, folder `reranking` với `BaseReranker`, `CrossEncoderModel`, `CrossEncoderReranker`, và `retrieval/context_builder.py`; API hiện vẫn chưa gọi các module này.
+- Mốc sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: repo có `vectorstore/hybrid_index.py`, `scoring/bm25.py` và `retrieval/hybrid_retriever.py`.
+- Mốc sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: repo có `retrieval/hybrid_retriever.py` trộn dense score với BM25 score, folder `reranking` với `BaseReranker`, `CrossEncoderModel`, `CrossEncoderReranker`, và `retrieval/context_builder.py`.
+- Mốc sau khi hoàn thành `tai_lieu/p2/10.txt`: repo có `core/startup.py` để khởi tạo sparse embedder/BM25/reranker từ Qdrant, `vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `vectorstore/upsert.py` build/upsert hybrid points, `api/app.py` gọi startup RAG components, `api/health.py` trả trạng thái RAG components và `api/routes/chat.py` dùng hybrid retrieval + reranker.
+- Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng OpenRouter nhưng vẫn dense-only; frontend hiện gọi `/api/chat/openai`.
 - Trạng thái dữ liệu raw hiện có hai file export giống hệt nhau theo checksum; từ các lần làm việc tiếp theo người dùng muốn dùng `database_export_2026-01-23T02-02-46.json`, trong khi code hiện tại vẫn đọc file ngày `2026-01-14`.
-- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 62 files, 436 nodes, 674 edges, backend `node:sqlite` full WAL.
+- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 63 files, 478 nodes, 773 edges, backend `node:sqlite` full WAL.
 
 ### `README_report.md`
 

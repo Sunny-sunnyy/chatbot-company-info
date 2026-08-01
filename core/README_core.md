@@ -9,16 +9,19 @@
 - 2026-07-25 20:22 +07 - Bổ sung giải thích vai trò và luồng hoạt động của từng file mã nguồn trong thư mục.
 - 2026-07-26 16:54 +07 - Cập nhật trạng thái sau buổi 6: tại thời điểm đó `schema.py` tồn tại nhưng vẫn rỗng và chưa định nghĩa `RetrievedDocument`.
 - 2026-07-26 21:02 +07 - Cập nhật trạng thái sau buổi 7: `schema.py` đã định nghĩa dataclass `RetrievedDocument`.
+- 2026-08-01 16:51 +07 - Bổ sung mô tả `startup.py` sau khi đọc `tai_lieu/p2/10.txt` và đối chiếu với code khởi tạo BM25/reranker hiện tại.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái `startup.py`: `api/app.py` gọi khởi tạo trong lifespan, `/health` đọc trạng thái và `/api/chat` lấy BM25/reranker từ file này.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `core` chứa mã dùng chung cho dự án.
 
-Tính tới thời điểm hiện tại, thư mục này có hai nhiệm vụ:
+Tính tới thời điểm hiện tại, thư mục này có các nhiệm vụ:
 
 - Đọc cấu hình từ YAML và biến môi trường.
 - Thiết lập logging cho toàn bộ ứng dụng.
 - Định nghĩa schema dùng chung cho dữ liệu retrieval.
+- Khởi tạo các component RAG nâng cao như sparse embedder, BM25 và reranker từ corpus trong Qdrant.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -115,6 +118,45 @@ Vai trò và luồng hoạt động:
 - Input thực tế đến từ payload Qdrant gồm `text` và metadata.
 - Output là object `RetrievedDocument` có thể truy cập bằng thuộc tính như `doc.text`, `doc.metadata` và `doc.score`.
 
+### `startup.py`
+
+File này đã có mã nguồn.
+
+Nội dung chính:
+
+- Import `QdrantClient`.
+- Import `SparseEmbedder` từ `embedding.sparse_embedder`.
+- Import `BM25` từ `scoring.bm25`.
+- Import `CrossEncoderReranker` và `CrossEncoderModel` từ `reranking`.
+- Import `get_qdrant_client` từ `vectorstore.qdrant`.
+- Import `init_sparse_embedder` từ `vectorstore.hybrid_index`.
+- Import `load_settings` từ `core.settings_loader`.
+- Đọc `collection_name` và cấu hình `reranking` từ settings.
+- Khai báo các biến module `_sparse_embedder`, `_bm25`, `_reranker` và `_initialized`.
+- Định nghĩa `initialize_rag_components()`, `get_bm25()`, `get_reranker()` và `get_initialization_status()`.
+
+Vai trò và luồng hoạt động:
+
+- `initialize_rag_components()` dùng Qdrant client để scroll toàn bộ point trong collection cấu hình, lấy payload `text` làm corpus.
+- Hàm fit `SparseEmbedder` trên corpus, gọi `init_sparse_embedder(...)`, khởi tạo `BM25`, tính average document length, load `CrossEncoderModel`, rồi tạo `CrossEncoderReranker`.
+- Hàm dùng biến module để cache component sau lần khởi tạo đầu tiên.
+- `get_bm25()` trả object BM25 đã được khởi tạo hoặc `None`.
+- `get_reranker()` trả object reranker đã được khởi tạo hoặc `None`.
+- `get_initialization_status()` trả dictionary trạng thái khởi tạo, kích thước vocabulary và average document length.
+
+Input/output:
+
+- Input chính là collection Qdrant đang có payload `text` và cấu hình `reranking` trong settings.
+- Output của `initialize_rag_components()` là dictionary gồm `sparse_embedder`, `bm25`, `reranker`, hoặc `None` nếu không load được corpus/component.
+
+Trạng thái hiện tại:
+
+- File được `api/app.py` gọi qua `initialize_rag_components()` trong lifespan startup.
+- File được `api/health.py` gọi qua `get_initialization_status()` để trả trạng thái RAG components.
+- File được `api/routes/chat.py` gọi qua `get_bm25()` và `get_reranker()` trong luồng `POST /api/chat`.
+- File chỉ khởi tạo CrossEncoder model thật khi gọi `initialize_rag_components()`, không phải khi import module.
+- File phụ thuộc Qdrant đang chạy và collection đã có point có payload `text`.
+
 ### `__init__.py`
 
 File này hiện đang rỗng.
@@ -128,6 +170,8 @@ Các module khác import `load_settings()` để lấy cấu hình dạng dictio
 Khi cần logging theo cấu hình YAML, entrypoint cần gọi `setup_logging()`. Sau đó các module có thể dùng `logging.getLogger("<ten_logger>")`.
 
 Ví dụ hiện tại trong `ingestion/load_data.py`, logger được lấy bằng tên `ingestion`.
+
+`core/startup.py` hiện chuẩn bị component cho luồng RAG nâng cao. FastAPI lifespan gọi file này khi backend startup; route `/api/chat` dùng BM25/reranker đã cache ở đây để chạy hybrid retrieval và reranking.
 
 ## Ghi Chú Kỹ Thuật
 

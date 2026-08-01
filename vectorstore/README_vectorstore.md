@@ -12,14 +12,16 @@
 - 2026-07-30 10:54 +07 - Cập nhật trạng thái sau `tai_lieu/p2/4.txt`: repo đã có `embedding/sparse_embedder.py`, nhưng vector store hiện vẫn dense-only; bổ sung trạng thái `hybrid_index.py` đang rỗng.
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau `tai_lieu/p2/5.txt`: `hybrid_index.py` đã có code build dense+sparse point; bổ sung lý thuyết, cách triển khai và ví dụ áp dụng hybrid index trong dự án.
 - 2026-07-31 15:45 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_index.py` trong luồng chuẩn bị point hybrid dense+sparse cho Qdrant.
+- 2026-08-01 16:51 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/10.txt`: `qdrant.py` tạo collection hybrid khi collection chưa tồn tại và `upsert.py` đã chuyển sang build/upsert hybrid points.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: ghi rõ lỗi `Not existing vector name error: sparse` xảy ra khi upsert hybrid vào collection Qdrant cũ dense-only.
 
 ## Nhiệm Vụ Của Thư Mục
 
 Thư mục `vectorstore` chứa mã kết nối Qdrant, đảm bảo collection tồn tại, chuyển chunk thành Qdrant point và upsert point vào vector store.
 
-Tính tới thời điểm kiểm tra này, luồng vector store chính vẫn đang dùng dense vector đơn thuần qua `vectorstore/index.py` và `vectorstore/upsert.py`.
+Tính tới thời điểm kiểm tra này, luồng vector store chính trong `upsert.py` đã chuyển sang hybrid dense+sparse. `vectorstore/index.py` vẫn còn là builder dense-only cũ, nhưng `vectorstore/upsert.py` hiện không gọi file này.
 
-Repo đã có `vectorstore/hybrid_index.py` để chuẩn bị point có cả dense vector và sparse vector, nhưng file này chưa được `upsert.py` hoặc `ingestion/pipeline.py` gọi. `vectorstore/qdrant.py` hiện vẫn tạo collection dense-only, chưa tạo collection Qdrant có named vectors `dense`/`sparse`.
+`vectorstore/qdrant.py` tạo collection có named vector `dense` và sparse vector `sparse` khi collection chưa tồn tại. Nếu collection `nmk_chatbot_collection` đã tồn tại từ luồng dense-only cũ, code hiện chỉ log rồi trả về, không tự migrate schema.
 
 ## Lý Thuyết Hybrid Index
 
@@ -51,7 +53,7 @@ File này đã có mã nguồn.
 Nội dung hiện tại:
 
 - Import `QdrantClient` từ `qdrant_client`.
-- Import `Distance` và `VectorParams` từ `qdrant_client.models`.
+- Import `VectorParams`, `Distance`, `SparseVectorParams` và `SparseIndexParams` từ `qdrant_client.models`.
 - Đọc cấu hình `vector_database` từ `core.settings_loader.load_settings()`.
 - Lấy `collection_name`, `vector_size`, `distance` và `timeout` từ settings.
 - Dùng biến module `_client` để cache Qdrant client.
@@ -60,7 +62,7 @@ Nội dung hiện tại:
 
 Hàm `get_qdrant_client()` hiện kết nối Qdrant bằng `url` nếu settings có `vector_database.url`, nếu không thì kết nối bằng `host` và `port`. Sau khi tạo client, hàm gọi `get_collections()` để kiểm tra kết nối.
 
-Hàm `ensure_collection(client)` hiện lấy danh sách collection đang có trong Qdrant. Nếu collection cấu hình đã tồn tại thì log và dừng. Nếu chưa tồn tại, hàm gọi `recreate_collection()` để tạo collection dense-only bằng `VectorParams(size=VECTOR_SIZE, distance=Distance[DISTANCE.upper()])`.
+Hàm `ensure_collection(client)` hiện lấy danh sách collection đang có trong Qdrant. Nếu collection cấu hình đã tồn tại thì log và dừng. Nếu chưa tồn tại, hàm gọi `recreate_collection()` để tạo collection hybrid gồm named vector `dense` và sparse vector `sparse`.
 
 Vai trò và luồng hoạt động:
 
@@ -68,9 +70,10 @@ Vai trò và luồng hoạt động:
 - `get_qdrant_client()` dùng pattern singleton ở cấp module: nếu `_client` đã có thì trả về lại client cũ, tránh tạo kết nối mới ở mỗi lần gọi.
 - Khi chưa có `_client`, hàm đọc cấu hình Qdrant từ settings, ưu tiên kết nối bằng `url`; nếu không có `url` thì dùng `host` và `port`.
 - Sau khi tạo client, hàm gọi `_client.get_collections()` để kiểm tra kết nối thật với Qdrant.
-- `ensure_collection(client)` kiểm tra collection theo `COLLECTION_NAME`. Nếu chưa có, hàm tạo collection dense-only, không tạo sparse vector.
+- `ensure_collection(client)` kiểm tra collection theo `COLLECTION_NAME`. Nếu chưa có, hàm tạo collection hybrid với `vectors_config={"dense": VectorParams(...)}` và `sparse_vectors_config={"sparse": SparseVectorParams(...)}`.
 - Input chính là cấu hình `vector_database` trong `config/settings.yaml` và Qdrant service đang chạy.
 - Output chính là một `QdrantClient` đã kết nối và collection `nmk_chatbot_collection` đã sẵn sàng nếu Qdrant chạy được.
+- Trạng thái chạy cần lưu ý: collection cũ dense-only không được tự xoá hoặc tự migrate. Trước khi upsert hybrid point, cần đảm bảo collection hiện có đúng schema hybrid hoặc xoá collection cũ để pipeline tạo lại.
 
 ### `index.py`
 
@@ -99,6 +102,11 @@ Vai trò và luồng hoạt động:
 - Input chính là `list[dict]` chunk từ `ingestion/pipeline.py`.
 - Output chính là `list[dict]` point để truyền cho `client.upsert(...)`.
 
+Trạng thái hiện tại:
+
+- File vẫn tồn tại để build dense-only points.
+- File hiện không được `vectorstore/upsert.py` gọi trong luồng pipeline sau cập nhật `p2/10`.
+
 ### `upsert.py`
 
 File này đã có mã nguồn.
@@ -109,20 +117,21 @@ Nội dung hiện tại:
 - Import `QdrantClient` từ `qdrant_client`.
 - Import `load_settings` từ `core.settings_loader`.
 - Import `get_qdrant_client` và `ensure_collection` từ `vectorstore.qdrant`.
-- Import `build_qdrant_points` từ `vectorstore.index`.
+- Import `build_hybrid_qdrant_points` và `init_sparse_embedder` từ `vectorstore.hybrid_index`.
+- Import `SparseEmbedder` từ `embedding.sparse_embedder`.
 - Định nghĩa hàm `upsert_chunks(chunks: list[dict])`.
 
-Hàm `upsert_chunks()` hiện kiểm tra chunks rỗng, lấy Qdrant client, đảm bảo collection tồn tại, build dense-only point từ chunks và gọi `client.upsert(...)` để ghi point vào collection cấu hình.
+Hàm `upsert_chunks()` hiện kiểm tra chunks rỗng, lấy Qdrant client, đảm bảo collection tồn tại, fit sparse embedder trên corpus chunk, build hybrid point từ chunks và gọi `client.upsert(...)` để ghi point vào collection cấu hình.
 
 Vai trò và luồng hoạt động:
 
 - `upsert.py` chịu trách nhiệm điều phối bước ghi chunk đã xử lý vào Qdrant.
-- `upsert_chunks(chunks)` lấy Qdrant client qua `get_qdrant_client()`, gọi `ensure_collection(client)`, rồi gọi `build_qdrant_points(chunks)`.
+- `upsert_chunks(chunks)` lấy Qdrant client qua `get_qdrant_client()`, gọi `ensure_collection(client)`, tạo `texts = [chunk["text"] for chunk in chunks]`, khởi tạo `SparseEmbedder()`, fit sparse embedder trên `texts`, gọi `init_sparse_embedder(sparse_embedder)`, rồi gọi `build_hybrid_qdrant_points(chunks)`.
 - Nếu không build được point nào, hàm log warning và trả về list rỗng.
 - Nếu có point, hàm gọi `client.upsert(collection_name=COLLECTION_NAME, points=points)`.
 - Input chính là list chunk có key `text` và `metadata`.
 - Output trực tiếp của hàm không trả về dữ liệu khi upsert thành công; trạng thái được ghi qua log.
-- Trạng thái hiện tại: file này không import `vectorstore.hybrid_index` hoặc `embedding.sparse_embedder`; sparse embedding chưa được build thành Qdrant point.
+- Trạng thái hiện tại: file đã chuyển sang upsert hybrid points. Khi chạy thật, Qdrant phải có collection schema tương thích với named vector `dense` và sparse vector `sparse`.
 
 ### `hybrid_index.py`
 
@@ -135,7 +144,7 @@ Trách nhiệm chính của file:
 - Tạo dense embedding từ text bằng `embedding.embedder.embed_texts(...)`.
 - Tạo sparse vector từ text bằng `SparseEmbedder.encode_batch(...)`.
 - Ghép `id`, `payload`, named vector `dense` và named vector `sparse` thành `PointStruct` phù hợp với Qdrant collection kiểu hybrid.
-- Giữ phần build point hybrid tách riêng khỏi luồng dense-only trong `vectorstore/index.py`, để code hiện tại vẫn có thể chạy dense-only trong khi phần hybrid đang được chuẩn bị.
+- Giữ phần build point hybrid tách riêng khỏi luồng dense-only trong `vectorstore/index.py`.
 
 Nội dung hiện tại:
 
@@ -180,8 +189,8 @@ Trạng thái hiện tại:
 
 - File đã có code build hybrid point.
 - File yêu cầu gọi `init_sparse_embedder(...)` trước khi build point; nếu chưa gọi sẽ raise `RuntimeError`.
-- File chưa được `vectorstore/upsert.py` hoặc `ingestion/pipeline.py` gọi.
-- `vectorstore/qdrant.py` hiện chưa tạo collection có named vector `dense` và sparse vector, nên chưa thể coi luồng hybrid index là đã chạy end-to-end.
+- File hiện được `vectorstore/upsert.py` gọi trong luồng pipeline.
+- `vectorstore/qdrant.py` hiện tạo collection hybrid khi collection chưa tồn tại.
 
 ## Trạng Thái Chạy Hiện Tại
 
@@ -202,16 +211,28 @@ Kết quả chạy thực tế đã ghi nhận:
 
 Trong quá trình chunking có nhiều warning `Empty text provided to split_paragraphs`. Các warning này phản ánh một số bản ghi có nội dung rỗng hoặc thiếu text để chia đoạn, nhưng luồng ingestion vẫn hoàn tất và upsert thành công.
 
+Sau cập nhật `p2/10`, người dùng đã chạy pipeline hybrid và gặp lỗi Qdrant:
+
+```text
+Wrong input: Not existing vector name error: sparse
+```
+
+Theo code hiện tại, nguyên nhân là collection `nmk_chatbot_collection` đã tồn tại từ luồng dense-only cũ nên `ensure_collection()` chỉ log rồi return, không tạo lại schema có sparse vector. `upsert.py` sau đó gửi point có vector `sparse` vào collection không có vector name này, nên Qdrant trả `400 Bad Request`.
+
+Kiểm tra tĩnh trước đó đã pass:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile core/startup.py vectorstore/qdrant.py vectorstore/upsert.py vectorstore/hybrid_index.py ingestion/pipeline.py retrieval/hybrid_retriever.py
+UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('ingestion.pipeline'); print('ingestion.pipeline import ok')"
+```
+
+Để upsert thật thành công với code hiện tại, collection trong Qdrant phải có named vector `dense` và sparse vector `sparse`. Nếu còn collection dense-only cũ, cần xoá collection cũ hoặc dùng collection name mới trước khi chạy lại pipeline.
+
 ## Ghi Chú Kỹ Thuật
 
-Luồng đang chạy qua pipeline hiện tại vẫn là dense-only. Collection được tạo bằng unnamed dense vector theo cấu trúc point từ `vectorstore/index.py`.
+Luồng đang chạy qua pipeline hiện tại là hybrid dense+sparse. Collection mới được tạo bằng named vector `dense` và sparse vector `sparse`, còn point được build bằng `PointStruct` trong `vectorstore/hybrid_index.py`.
 
-Luồng hybrid index đã có file riêng nhưng chưa được nối vào pipeline. Để dùng thật, các phần còn cần khớp với nhau là:
-
-- Fit `SparseEmbedder` trên toàn bộ chunk text.
-- Gọi `init_sparse_embedder(...)`.
-- Tạo Qdrant collection có named dense vector và sparse vector.
-- Thay luồng build point trong upsert/pipeline sang `build_hybrid_qdrant_points(...)`.
+Nếu Qdrant vẫn còn collection cũ dense-only từ lần chạy trước, `ensure_collection()` không tự migrate collection đó. Khi đó cần xoá collection cũ rồi chạy lại pipeline để tạo collection hybrid và upsert lại dữ liệu.
 
 Qdrant đang được cấu hình trong `config/settings.yaml` với:
 

@@ -4,6 +4,7 @@
 
 - 2026-07-31 17:07 +07 - Tạo README cho thư mục `reranking/models` sau khi đọc `tai_lieu/p2/9.txt` và đối chiếu với mã nguồn CrossEncoder hiện tại.
 - 2026-07-31 17:22 +07 - Bổ sung mô tả rõ trách nhiệm của từng file `.py` trong thư mục `reranking/models`.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái CrossEncoder: model được `core/startup.py` khởi tạo khi backend startup nếu Qdrant corpus sẵn sàng.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -58,6 +59,7 @@ Trạng thái hiện tại:
 - File đã có code load và gọi CrossEncoder.
 - File chưa có automated test riêng.
 - File chỉ load model thật khi khởi tạo `CrossEncoderModel`, không phải khi import module.
+- `core/startup.py` hiện tạo `CrossEncoderModel(RERANKER_MODEL, device=RERANKER_DEVICE)` trong `initialize_rag_components()`.
 
 ### `__init__.py`
 
@@ -69,4 +71,4 @@ File đánh dấu `reranking/models` là Python package. File không chứa logi
 
 `reranking/reranker.py` import `CrossEncoderModel` từ file này, tạo cặp query/document, rồi gọi `score_batch(...)` để lấy rerank score.
 
-Code hiện tại chưa nối wrapper model này vào API route.
+Wrapper model này hiện được nối vào API gián tiếp qua `core/startup.py` và `api/routes/chat.py`.

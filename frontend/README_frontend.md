@@ -4,6 +4,7 @@
 
 - 2026-07-26 21:02 +07 - Tạo README tổng quan cho thư mục `frontend` sau buổi 7, đối chiếu với mã nguồn Next.js hiện tại và kết quả build frontend.
 - 2026-07-27 16:03 +07 - Cập nhật trạng thái frontend sau khi `frontend/lib/api.ts` chuyển sang endpoint OpenRouter `POST /api/chat/openai` và ghi hướng dẫn đổi lại endpoint cũ.
+- 2026-08-01 17:58 +07 - Đối chiếu lại sau p2 hoàn chỉnh: frontend vẫn gọi `/api/chat/openai`, chưa chuyển sang endpoint `/api/chat` hybrid/reranker.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -153,6 +154,8 @@ Endpoint cũ vẫn tồn tại ở backend:
 ```text
 POST http://localhost:8000/api/chat
 ```
+
+Endpoint này sau p2 đã dùng hybrid retrieval, BM25 và reranker, nhưng frontend hiện chưa gọi endpoint đó.
 
 ## Cách Đổi Lại Endpoint Cũ
 

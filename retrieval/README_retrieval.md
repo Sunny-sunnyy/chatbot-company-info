@@ -14,6 +14,7 @@
 - 2026-07-31 16:21 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_retriever.py` trong luồng retrieval hybrid dense+BM25.
 - 2026-07-31 17:07 +07 - Cập nhật trạng thái sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả `context_builder.py` và ghi rõ luồng reranking/context builder chưa được API route gọi.
 - 2026-07-31 17:22 +07 - Bổ sung mô tả rõ trách nhiệm của từng file `.py` trong thư mục `retrieval`.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: `/api/chat` đã gọi `hybrid_retrieve()`, còn `ContextBuilder` vẫn chưa được route dùng.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -21,7 +22,7 @@ Thư mục `retrieval` chứa mã truy xuất tài liệu liên quan từ vector
 
 Tính tới sau buổi 7, thư mục này đã có code embedding query, truy vấn collection Qdrant và chuẩn hóa kết quả truy vấn thành document. `core/schema.py` đã định nghĩa `RetrievedDocument`, nên module retrieval hiện import được.
 
-Sau `tai_lieu/p2/7.txt` và `tai_lieu/p2/8.txt`, repo đã có thêm `retrieval/hybrid_retriever.py` để kết hợp dense retrieval với BM25 score. Sau `tai_lieu/p2/9.txt`, repo có thêm `retrieval/context_builder.py` để ghép document đã retrieval/rerank thành context cho LLM. Luồng API hiện tại vẫn chưa gọi hybrid retriever hoặc context builder; route chat hiện vẫn dùng `retrieval/retriever.py` và tự build context trong route.
+Sau `tai_lieu/p2/7.txt` và `tai_lieu/p2/8.txt`, repo đã có thêm `retrieval/hybrid_retriever.py` để kết hợp dense retrieval với BM25 score. Sau `tai_lieu/p2/9.txt`, repo có thêm `retrieval/context_builder.py` để ghép document đã retrieval/rerank thành context cho LLM. Endpoint `POST /api/chat` hiện đã gọi `hybrid_retrieve()`, còn `POST /api/chat/openai` vẫn dùng dense retriever `retrieval/retriever.py`. Route chat hiện vẫn tự build context trong route và chưa dùng `ContextBuilder`.
 
 ## Lý Thuyết BM25 Và Hybrid Retrieval
 
@@ -153,8 +154,9 @@ Trạng thái hiện tại:
 
 - File đã có code hybrid retrieval.
 - File phụ thuộc Qdrant collection có named vector `dense`, vì query gọi `using="dense"`.
-- Pipeline/upsert hiện chưa tạo collection/point hybrid tương ứng.
-- API route hiện chưa gọi `hybrid_retrieve()`, nên luồng chat đang chạy chưa dùng hybrid retriever.
+- Pipeline/upsert hiện đã chuyển sang build/upsert point hybrid tương ứng qua `vectorstore/upsert.py` và `vectorstore/hybrid_index.py`.
+- Endpoint `POST /api/chat` hiện gọi `hybrid_retrieve(question, bm25)` với BM25 lấy từ `core.startup.get_bm25()`.
+- Endpoint `POST /api/chat/openai` hiện chưa gọi file này và vẫn dùng `retrieval/retriever.py`.
 
 ### `context_builder.py`
 
@@ -186,7 +188,7 @@ Vai trò và luồng hoạt động:
 - Cuối cùng hàm join các phần bằng `separator`, log số document và số ký tự context đã build, rồi trả về context dạng `str`.
 - Input chính là `list[RetrievedDocument]`.
 - Output chính là `str` dùng làm context cho LLM.
-- Trạng thái hiện tại: file đã có code nhưng chưa được `api/routes/chat.py`, `api/routes/chat_openai.py` hoặc generator gọi.
+- Trạng thái hiện tại: file đã có code nhưng chưa được `api/routes/chat.py`, `api/routes/chat_openai.py` hoặc generator gọi. Route `/api/chat` hiện tự ghép context bằng `"\n\n".join(...)`.
 
 ### `__init__.py`
 
@@ -206,7 +208,7 @@ Luồng retrieval dense-only theo code hiện tại:
 
 Luồng này hiện không còn dừng ở bước import schema. Khi chạy thật, kết quả phụ thuộc trạng thái Qdrant local và collection `nmk_chatbot_collection`.
 
-Luồng hybrid retrieval đã có code riêng trong `hybrid_retriever.py`, và context builder đã có code riêng trong `context_builder.py`, nhưng cả hai chưa được nối vào API.
+Luồng hybrid retrieval đã có code riêng trong `hybrid_retriever.py` và hiện được endpoint `POST /api/chat` dùng. Context builder đã có code riêng trong `context_builder.py`, nhưng chưa được nối vào API.
 
 ## Ghi Chú Kỹ Thuật
 

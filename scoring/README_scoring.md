@@ -4,6 +4,7 @@
 
 - 2026-07-30 12:20 +07 - Tạo README cho thư mục `scoring` sau khi đọc `tai_lieu/p2/6.txt`, `tai_lieu/p2/7.txt` và đối chiếu với code BM25 hiện tại.
 - 2026-07-31 16:09 +07 - Bổ sung mô tả rõ trách nhiệm của `bm25.py` trong luồng tính keyword relevance cho hybrid retrieval.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái BM25: `core/startup.py` khởi tạo BM25 và `/api/chat` dùng trong `hybrid_retrieve()`.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -120,8 +121,9 @@ Trạng thái hiện tại:
 
 - File đã có code BM25.
 - File được `retrieval/hybrid_retriever.py` import.
+- File được `core/startup.py` khởi tạo từ corpus Qdrant sau khi fit `SparseEmbedder`.
+- Endpoint `POST /api/chat` dùng BM25 này trong `hybrid_retrieve(question, bm25)`.
 - Chưa có automated test riêng cho `BM25`.
-- Chưa có API route đang gọi hybrid retriever, nên BM25 chưa nằm trong luồng chat đang chạy.
 
 ### `__init__.py`
 
