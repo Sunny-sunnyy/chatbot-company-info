@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:28 +07 - Cập nhật trạng thái sau khi kiểm tra log chạy thật: pipeline hybrid đã chạy thành công, collection `nmk_chatbot_collection` đã có schema hybrid và chứa 450 points; lỗi `Not existing vector name error: sparse` chỉ xảy ra ở lần chạy đầu với collection cũ dense-only.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
 - 2026-07-24 20:18 +07 - Rút gọn nội dung vì các file trong thư mục hiện chưa có dòng mã nguồn nào.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả trạng thái và nhiệm vụ hiện tại của từng file trong thư mục.
@@ -211,13 +212,13 @@ Kết quả chạy thực tế đã ghi nhận:
 
 Trong quá trình chunking có nhiều warning `Empty text provided to split_paragraphs`. Các warning này phản ánh một số bản ghi có nội dung rỗng hoặc thiếu text để chia đoạn, nhưng luồng ingestion vẫn hoàn tất và upsert thành công.
 
-Sau cập nhật `p2/10`, người dùng đã chạy pipeline hybrid và gặp lỗi Qdrant:
+Sau cập nhật `p2/10`, người dùng đã chạy pipeline hybrid. Lần chạy đầu gặp lỗi Qdrant `Wrong input: Not existing vector name error: sparse` vì collection cũ dense-only chưa có vector name `sparse`. Sau khi xoá collection cũ, pipeline chạy lại thành công theo log thực tế:
 
-```text
-Wrong input: Not existing vector name error: sparse
-```
-
-Theo code hiện tại, nguyên nhân là collection `nmk_chatbot_collection` đã tồn tại từ luồng dense-only cũ nên `ensure_collection()` chỉ log rồi return, không tạo lại schema có sparse vector. `upsert.py` sau đó gửi point có vector `sparse` vào collection không có vector name này, nên Qdrant trả `400 Bad Request`.
+- Collection `nmk_chatbot_collection` được tạo lại với named vector `dense` (384, cosine) và sparse vector `sparse`.
+- `SparseEmbedder` fit trên 450 documents, vocabulary size 1486.
+- `build_hybrid_qdrant_points()` build 450 hybrid Qdrant points.
+- `upsert_chunks()` upsert 450 hybrid points vào collection.
+- `run_ingestion_pipeline()` log `Upserted 450 chunks into the vector store`.
 
 Kiểm tra tĩnh trước đó đã pass:
 
@@ -226,7 +227,7 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python -m py_compile core/startup.py vectorsto
 UV_CACHE_DIR=/tmp/uv-cache uv run python -c "import importlib; importlib.import_module('ingestion.pipeline'); print('ingestion.pipeline import ok')"
 ```
 
-Để upsert thật thành công với code hiện tại, collection trong Qdrant phải có named vector `dense` và sparse vector `sparse`. Nếu còn collection dense-only cũ, cần xoá collection cũ hoặc dùng collection name mới trước khi chạy lại pipeline.
+Trạng thái hiện tại: collection `nmk_chatbot_collection` trong Qdrant local đã có đúng schema hybrid (named vector `dense` + sparse vector `sparse`) và chứa 450 hybrid points theo log chạy pipeline. Nếu sau này chạy lại pipeline khi collection đang giữ schema cũ dense-only, cần xoá collection cũ trước để `ensure_collection()` tạo lại đúng schema hybrid.
 
 ## Ghi Chú Kỹ Thuật
 

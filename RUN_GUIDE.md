@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:28 +07 - Cập nhật trạng thái sau khi kiểm tra log chạy thật: pipeline hybrid đã chạy thành công, collection `nmk_chatbot_collection` đã có schema hybrid và chứa 450 points; lỗi `Not existing vector name error: sparse` chỉ xảy ra ở lần chạy đầu với collection cũ dense-only.
 - 2026-08-01 17:58 +07 - Viết lại hướng dẫn chạy theo trạng thái repo hiện tại: dùng `uv`, Qdrant hybrid, backend FastAPI và frontend Next.js.
 
 ## Mục Đích
@@ -39,6 +40,8 @@ Wrong input: Not existing vector name error: sparse
 ```
 
 nguyên nhân là Qdrant đang giữ collection cũ dense-only. Xóa collection cũ hoặc đổi `vector_database.collection_name`, sau đó chạy lại pipeline để collection được tạo lại đúng schema hybrid.
+
+Trạng thái hiện tại: pipeline hybrid đã chạy thành công; collection `nmk_chatbot_collection` đang có schema hybrid (named vector `dense` + sparse vector `sparse`) và chứa 450 points. Block lỗi phía trên là hướng dẫn khắc phục nếu chạy lại với collection cũ.
 
 ## 3. Chạy Backend
 
