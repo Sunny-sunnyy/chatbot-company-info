@@ -87,3 +87,61 @@ def test_chat_openai_endpoint_returns_429_when_rate_limited(monkeypatch):
         assert exc.status_code == 429
     else:
         raise AssertionError("Expected HTTPException with status 429")
+
+
+def test_chat_openai_endpoint_uses_reranker_when_available(monkeypatch):
+    import api.routes.chat_openai as chat_route
+    from core.schema import RetrievedDocument
+
+    class FakeReranker:
+        def __init__(self):
+            self.calls = []
+
+        def rerank(self, query, documents, top_k=None):
+            self.calls.append((query, top_k))
+            return documents[:top_k]
+
+    fake_reranker = FakeReranker()
+
+    def fake_hybrid_retrieve(question, bm25):
+        assert question == "Dự án quán cà phê"
+        return [
+            RetrievedDocument(id=f"doc-{i}", score=0.9, text=f"Nội dung dự án {i}", metadata={})
+            for i in range(7)
+        ]
+
+    async def fake_generate_answer(context: str, question: str):
+        assert question == "Dự án quán cà phê"
+        return "Đã trả lời."
+
+    monkeypatch.setattr(chat_route, "hybrid_retrieve", fake_hybrid_retrieve)
+    monkeypatch.setattr(chat_route, "generate_answer_async", fake_generate_answer)
+    monkeypatch.setattr(chat_route, "get_bm25", lambda: object())
+    monkeypatch.setattr(chat_route, "get_reranker", lambda: fake_reranker)
+
+    response = asyncio.run(
+        chat_route.chat_openai_endpoint(
+            chat_route.ChatRequest(query="Dự án quán cà phê"),
+            FakeRequest(),
+        )
+    )
+
+    data = response.model_dump()
+    assert fake_reranker.calls[0][0] == "Dự án quán cà phê"
+    assert fake_reranker.calls[0][1] == chat_route.RERRANKING_TOP_K
+    assert len(data["sources"]) == chat_route.RERRANKING_TOP_K
+    assert data["answer"] == "Đã trả lời."
+
+
+def test_check_rate_limit_sliding_window(monkeypatch):
+    import api.routes.chat_openai as chat_route
+
+    fake_time = [1_000_000.0]
+    monkeypatch.setattr(chat_route.time, "time", lambda: fake_time[0])
+
+    for _ in range(60):
+        assert chat_route.check_rate_limit("10.0.0.1") is True
+    assert chat_route.check_rate_limit("10.0.0.1") is False
+
+    fake_time[0] += 61
+    assert chat_route.check_rate_limit("10.0.0.1") is True
