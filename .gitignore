@@ -26,3 +26,6 @@ qdrant_storage/
 # OS/editor noise
 .DS_Store
 .vscode/
+
+# Superpowers workflow scratch
+.superpowers/
