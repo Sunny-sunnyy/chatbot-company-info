@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 import uuid
 
 from retrieval.hybrid_retriever import hybrid_retrieve
+from retrieval.context_builder import ContextBuilder
 from core.startup import get_bm25, get_reranker
 from llm.generator import generate_answer
 from core.settings_loader import load_settings
@@ -113,10 +114,7 @@ async def chat_endpoint(request: ChatRequest, req: Request):
             documents = documents[:RERRANKING_TOP_K]  # Cut to top K
 
         # Step 3: Build context and generate answer
-        context = "\n\n".join(
-            f"[{i+1}] {doc.text}\n(Nguồn: {doc.metadata})" 
-            for i, doc in enumerate(documents)
-        )
+        context = ContextBuilder().build(documents)
         logger.info(f"Session {session_id}: Retrieved {len(documents)} documents")
         
         answer = generate_answer(context, question)
@@ -185,7 +183,7 @@ def chat(question: str) -> str:
         else:
             documents = documents[:RERRANKING_TOP_K]
 
-        context = "\n\n".join(f"[{i+1}] {doc.text}\n(Nguồn: {doc.metadata})" for i, doc in enumerate(documents))
+        context = ContextBuilder().build(documents)
         logger.info(f"Retrieved {len(documents)} documents for the question")
 
         answer = generate_answer(context, question)
