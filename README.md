@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 22:04 +07 - Cập nhật trạng thái CodeGraph mới nhất và xác nhận luồng frontend hiện gọi `/api/chat/openai` OpenRouter với hybrid retrieval.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2 (hybrid + BM25 + reranker + ContextBuilder, vẫn OpenRouter) và ghi nhận pipeline hybrid đã chạy thành công với collection hybrid 450 points.
 - 2026-07-24 21:39 +07 - Bổ sung mô tả nhiệm vụ file mã nguồn ở thư mục gốc.
 - 2026-07-25 17:34 +07 - Bổ sung trạng thái CodeGraph, `.gitignore` và các file tài liệu/cấu hình ở thư mục gốc.
@@ -26,7 +27,7 @@ Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài 
 
 CodeGraph đã được init local cho repo này bằng CLI `1.5.0`. Thư mục `.codegraph/` là index SQLite local, được ignore trong `.gitignore` và không nên commit.
 
-Trạng thái kiểm tra gần nhất ngày 2026-08-01 17:58 +07: `codegraph status .` báo `Index is up to date`, index có 63 files, 478 nodes, 773 edges, backend `node:sqlite` full WAL và journal `wal`.
+Trạng thái kiểm tra gần nhất ngày 2026-08-01 22:04 +07: `codegraph status .` báo `Index is up to date`, index có 64 files, 509 nodes, 854 edges, backend `node:sqlite` full WAL và journal `wal`.
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau khi init: CodeGraph watch project và cập nhật graph khi file thay đổi. Nếu cần kiểm tra thủ công, dùng `codegraph status .`; nếu nghi ngờ index lệch, dùng `codegraph sync`.
 

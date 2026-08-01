@@ -2,10 +2,11 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 22:04 +07 - Bổ sung mô tả `tests/test_context_builder.py` và cập nhật trạng thái test theo route OpenRouter hybrid hiện tại.
 - 2026-08-01 20:40 +07 - Cập nhật sau khi nâng cấp `/api/chat/openai` lên v2: test route giờ cover luồng hybrid + rate limit 429 + BM25 chưa sẵn sàng 503.
 - 2026-07-27 16:03 +07 - Tạo README cho thư mục `tests` sau khi thêm automated tests cho luồng OpenRouter isolated path.
 - 2026-07-27 17:04 +07 - Cập nhật mô tả test generator sau khi bổ sung kiểm tra cấu hình tắt OpenRouter reasoning bằng `ModelSettings.extra_body`.
-- 2026-08-01 17:58 +07 - Cập nhật trạng thái test sau p2 hoàn chỉnh: test hiện có vẫn chỉ bao phủ luồng OpenRouter isolated path, chưa có test cho `/api/chat` hybrid/reranker.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái test sau p2 hoàn chỉnh; sau mốc này test route OpenRouter đã được cập nhật để cover luồng hybrid, rate limit và BM25 chưa sẵn sàng.
 
 ## Nhiệm Vụ Của Thư Mục
 
@@ -57,12 +58,25 @@ Vai trò hiện tại:
 - Case 429 khi vượt rate limit in-memory (monkeypatch `check_rate_limit(...)` trả `False`).
 - Case 503 khi `get_bm25()` trả `None` (BM25 chưa khởi tạo).
 
+### `test_context_builder.py`
+
+File này đã có mã nguồn.
+
+Vai trò hiện tại:
+
+- Test `retrieval.context_builder.ContextBuilder`.
+- Kiểm tra ghép nhiều document bằng separator mặc định.
+- Kiểm tra giới hạn số document bằng `max_documents`.
+- Kiểm tra cắt context khi vượt `max_context_length`.
+- Kiểm tra bỏ qua document có text rỗng.
+- Kiểm tra trả chuỗi rỗng khi không có document.
+
 ## Cách Chạy Hiện Tại
 
 Chạy các test mới từ thư mục gốc:
 
 ```bash
-UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_llm_generator_openai.py tests/test_api_chat_openai.py -q
+UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_llm_generator_openai.py tests/test_api_chat_openai.py tests/test_context_builder.py -q
 ```
 
 ## Ghi Chú Kỹ Thuật

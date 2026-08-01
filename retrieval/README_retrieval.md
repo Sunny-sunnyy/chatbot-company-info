@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 22:04 +07 - Gỡ câu trạng thái cũ về `ContextBuilder`; xác nhận cả `/api/chat` và `/api/chat/openai` đều dùng `hybrid_retrieve()` và `ContextBuilder`.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2: `hybrid_retrieve()` hiện được cả hai route dùng; `ContextBuilder` được route dùng; `retriever.py` còn là legacy dense-only không route nào gọi.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
 - 2026-07-24 20:18 +07 - Rút gọn nội dung vì file trong thư mục hiện chưa có dòng mã nguồn nào.
@@ -15,7 +16,7 @@
 - 2026-07-31 16:21 +07 - Bổ sung mô tả rõ trách nhiệm của `hybrid_retriever.py` trong luồng retrieval hybrid dense+BM25.
 - 2026-07-31 17:07 +07 - Cập nhật trạng thái sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả `context_builder.py` và ghi rõ luồng reranking/context builder chưa được API route gọi.
 - 2026-07-31 17:22 +07 - Bổ sung mô tả rõ trách nhiệm của từng file `.py` trong thư mục `retrieval`.
-- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: `/api/chat` đã gọi `hybrid_retrieve()`, còn `ContextBuilder` vẫn chưa được route dùng.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau p2 hoàn chỉnh: `/api/chat` đã gọi `hybrid_retrieve()`; ở trạng thái hiện tại sau mốc 20:40, cả `/api/chat` và `/api/chat/openai` đều dùng `ContextBuilder`.
 
 ## Nhiệm Vụ Của Thư Mục
 

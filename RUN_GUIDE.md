@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 22:04 +07 - Sửa trạng thái `/api/chat/openai`: route OpenRouter hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder`, không còn dùng dense-only retriever.
 - 2026-08-01 20:28 +07 - Cập nhật trạng thái sau khi kiểm tra log chạy thật: pipeline hybrid đã chạy thành công, collection `nmk_chatbot_collection` đã có schema hybrid và chứa 450 points; lỗi `Not existing vector name error: sparse` chỉ xảy ra ở lần chạy đầu với collection cũ dense-only.
 - 2026-08-01 17:58 +07 - Viết lại hướng dẫn chạy theo trạng thái repo hiện tại: dùng `uv`, Qdrant hybrid, backend FastAPI và frontend Next.js.
 
@@ -108,6 +109,6 @@ POST /api/chat/openai
 
 `POST /api/chat` dùng `hybrid_retrieve()`, BM25 và reranker, nhưng vẫn gọi legacy `llm/generator.py`. File generator legacy này chỉ hỗ trợ provider `ollama`.
 
-`POST /api/chat/openai` dùng `llm/generator_openai.py` và phù hợp với `llm.provider: openrouter` trong `config/settings.yaml`, nhưng route này vẫn dùng dense retriever `retrieval/retriever.py`.
+`POST /api/chat/openai` dùng `hybrid_retrieve()`, BM25, reranker, `ContextBuilder` và `llm/generator_openai.py`. Route này phù hợp với `llm.provider: openrouter` trong `config/settings.yaml` và không còn dùng dense-only `retrieval/retriever.py`.
 
 Frontend hiện gọi `POST /api/chat/openai`.

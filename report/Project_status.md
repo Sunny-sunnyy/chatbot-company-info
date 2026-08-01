@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 22:04 +07 - Kiểm tra lại `api/routes/chat_openai.py` và sửa tài liệu: `/api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder`, không dùng dense-only retriever; cập nhật trạng thái CodeGraph mới nhất.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2 (hybrid retrieval + BM25 + reranker + ContextBuilder, vẫn dùng OpenRouter qua OpenAI Agents SDK) và ghi nhận pipeline hybrid đã chạy thành công với collection hybrid 450 points.
 - 2026-07-24 20:06 +07 - Tạo bản ghi trạng thái dự án sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ ghi những phần đã tồn tại trong dự án.
@@ -25,7 +26,7 @@
 - 2026-07-30 12:20 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: bổ sung `hybrid_index.py`, `hybrid_retriever.py`, `scoring/bm25.py`, lý thuyết BM25/hybrid retrieval và trạng thái CodeGraph mới nhất.
 - 2026-07-31 17:07 +07 - Cập nhật trạng thái sau khi đọc `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: bổ sung mô tả hybrid retriever có BM25, folder `reranking`, `retrieval/context_builder.py` và trạng thái CodeGraph mới nhất.
 - 2026-08-01 16:51 +07 - Cập nhật trạng thái khi đang ở `tai_lieu/p2/10.txt`: bổ sung `core/startup.py`, chuyển vectorstore/upsert sang hybrid dense+sparse và ghi nhận rủi ro collection Qdrant cũ dense-only trước khi chạy pipeline.
-- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau khi hoàn thành toàn bộ p2: API startup khởi tạo RAG components, `/api/chat` dùng hybrid retrieval + reranker, `/api/chat/openai` vẫn dùng dense retrieval + OpenRouter và frontend vẫn gọi endpoint OpenRouter.
+- 2026-08-01 17:58 +07 - Cập nhật trạng thái sau khi hoàn thành toàn bộ p2: API startup khởi tạo RAG components, `/api/chat` dùng hybrid retrieval + reranker, `/api/chat/openai` sau đó được cập nhật lên hybrid retrieval + OpenRouter và frontend vẫn gọi endpoint OpenRouter.
 
 ## Mốc Học Hiện Tại
 
@@ -313,7 +314,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-08-01 17:58 +07, `codegraph status .` ghi nhận index hiện có 63 files, 478 nodes, 773 edges, DB size 1.08 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-08-01 22:04 +07, `codegraph status .` ghi nhận index hiện có 64 files, 509 nodes, 854 edges, DB size 1.19 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
