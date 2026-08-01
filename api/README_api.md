@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2: route dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và có rate limit in-memory theo IP; `/api/chat` cũng chuyển sang dùng `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api` sau buổi 7, đối chiếu với mã nguồn FastAPI hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả route OpenRouter mới `POST /api/chat/openai` và trạng thái đăng ký router trong `api/app.py`.
 - 2026-07-27 17:13 +07 - Cập nhật entrypoint `api/app.py` để `uv run python -m api.app` chạy Uvicorn không bật reload và chỉ bind `127.0.0.1`.
@@ -114,9 +115,9 @@ Route hiện có:
 
 ## Ghi Chú Kỹ Thuật
 
-`POST /api/chat` hiện gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup đã khởi tạo được, tự ghép context trong route và gọi `generate_answer(context, question)` từ legacy `llm/generator.py`. Route này có rate limit in-memory theo IP qua `RATE_LIMIT_PER_MINUTE`.
+`POST /api/chat` hiện gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup đã khởi tạo được, build context bằng `ContextBuilder` và gọi `generate_answer(context, question)` từ legacy `llm/generator.py`. Route này có rate limit in-memory theo IP qua `RATE_LIMIT_PER_MINUTE`.
 
-`POST /api/chat/openai` hiện gọi `retrieve(question)` và `await generate_answer_async(context, question)` từ `llm/generator_openai.py`.
+`POST /api/chat/openai` hiện gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup khởi tạo được, build context bằng `ContextBuilder` và gọi `await generate_answer_async(context, question)` từ `llm/generator_openai.py`. Route này cũng có rate limit in-memory theo IP như `/api/chat`.
 
 `llm/generator.py` được giữ nguyên làm legacy Ollama generator. Luồng OpenRouter mới nằm trong `llm/generator_openai.py`.
 

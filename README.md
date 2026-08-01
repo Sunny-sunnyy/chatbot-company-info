@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2 (hybrid + BM25 + reranker + ContextBuilder, vẫn OpenRouter) và ghi nhận pipeline hybrid đã chạy thành công với collection hybrid 450 points.
 - 2026-07-24 21:39 +07 - Bổ sung mô tả nhiệm vụ file mã nguồn ở thư mục gốc.
 - 2026-07-25 17:34 +07 - Bổ sung trạng thái CodeGraph, `.gitignore` và các file tài liệu/cấu hình ở thư mục gốc.
 - 2026-07-25 20:22 +07 - Bổ sung chuẩn mô tả vai trò file mã nguồn; tại thời điểm đó `chat.py` vẫn rỗng và chưa có luồng xử lý.
@@ -83,7 +84,7 @@ Tính tới sau buổi 5, người dùng đã chạy Qdrant container thành cô
 
 Thư mục này được Docker tạo khi chạy Qdrant.
 
-Đây là dữ liệu local của vector database. Không xóa thư mục này nếu muốn giữ collection và point đã upsert. Sau cập nhật `p2/10`, pipeline hiện upsert hybrid points dense+sparse. Nếu collection cũ dense-only vẫn còn trong Qdrant local, cần xoá collection cũ để pipeline tạo lại collection hybrid đúng schema.
+Đây là dữ liệu local của vector database. Không xóa thư mục này nếu muốn giữ collection và point đã upsert. Sau cập nhật `p2/10`, pipeline upsert hybrid points dense+sparse và đã chạy thành công: collection `nmk_chatbot_collection` hiện có schema hybrid và chứa 450 points.
 
 ### `brainstorming.md`
 
@@ -123,7 +124,7 @@ Nếu cần nạp lại dữ liệu vào Qdrant:
 uv run python -m ingestion.pipeline
 ```
 
-Sau cập nhật `p2/10`, pipeline sẽ build/upsert hybrid points. Nếu Qdrant đang giữ collection `nmk_chatbot_collection` cũ dense-only từ lần chạy trước, xoá collection đó trước rồi chạy pipeline để collection được tạo lại với named vector `dense` và sparse vector `sparse`.
+Sau cập nhật `p2/10`, pipeline build/upsert hybrid points và đã chạy thành công. Nếu chạy lại khi collection đang giữ schema cũ dense-only, xoá collection đó trước để pipeline tạo lại collection với named vector `dense` và sparse vector `sparse`.
 
 Pipeline hiện không còn tạo chunk từ `heroSlides.json`. File `data/processed/heroSlides.json` vẫn tồn tại như dữ liệu processed, nhưng `ingestion/chunking/heroSlides.py` đã bị xoá khỏi code hiện tại để giảm nhiễu retrieval.
 
@@ -195,10 +196,10 @@ Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọ
 
 `scoring/bm25.py` hiện đã có class `BM25` để tính keyword relevance giữa query và document. `retrieval/hybrid_retriever.py` hiện đã có hàm `hybrid_retrieve(query, bm25)` để trộn dense score và BM25 score theo `dense_weight`/`bm25_weight` trong settings. Endpoint `POST /api/chat` hiện đã gọi luồng hybrid này.
 
-`reranking` hiện đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker` để chấm điểm lại document theo cặp query/document. Endpoint `POST /api/chat` hiện gọi reranker lấy từ `core/startup.py` nếu component này đã khởi tạo thành công. `retrieval/context_builder.py` hiện đã có `ContextBuilder`, nhưng route chat hiện vẫn tự ghép context bằng `"\n\n".join(...)` và chưa dùng class này.
+`reranking` hiện đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker` để chấm điểm lại document theo cặp query/document. Endpoint `POST /api/chat` hiện gọi reranker lấy từ `core/startup.py` nếu component này đã khởi tạo thành công. `retrieval/context_builder.py` đã có `ContextBuilder` và cả hai route chat (`/api/chat`, `/api/chat/openai`) hiện đều dùng class này để build context.
 
 Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 
 `api/app.py` hiện chạy Uvicorn với `host="0.0.0.0"`, port `8000` và `reload=True` khi dùng `uv run python -m api.app`.
 
-Lưu ý tích hợp hiện tại: `config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter đúng theo cấu hình hiện tại nhưng vẫn dùng dense retriever `retrieval/retriever.py`. Frontend hiện gọi `POST /api/chat/openai`.
+Lưu ý tích hợp hiện tại: `config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker + `ContextBuilder` nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter qua OpenAI Agents SDK, đồng thời dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` giống luồng v2. `retrieval/retriever.py` (dense-only) được giữ làm legacy nhưng không còn route nào gọi. Frontend hiện gọi `POST /api/chat/openai`.

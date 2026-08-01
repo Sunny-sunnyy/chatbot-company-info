@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:40 +07 - Cập nhật mô tả `Project_status.md` sau khi nâng cấp `/api/chat/openai` lên v2 và ghi nhận pipeline hybrid chạy thành công.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 20:31 +07 - Bổ sung mô tả file `Agent_session_prompt.md`.
@@ -62,7 +63,7 @@ Nội dung hiện có:
 - Mốc sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: repo có `vectorstore/hybrid_index.py`, `scoring/bm25.py` và `retrieval/hybrid_retriever.py`.
 - Mốc sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: repo có `retrieval/hybrid_retriever.py` trộn dense score với BM25 score, folder `reranking` với `BaseReranker`, `CrossEncoderModel`, `CrossEncoderReranker`, và `retrieval/context_builder.py`.
 - Mốc sau khi hoàn thành `tai_lieu/p2/10.txt`: repo có `core/startup.py` để khởi tạo sparse embedder/BM25/reranker từ Qdrant, `vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `vectorstore/upsert.py` build/upsert hybrid points, `api/app.py` gọi startup RAG components, `api/health.py` trả trạng thái RAG components và `api/routes/chat.py` dùng hybrid retrieval + reranker.
-- Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng OpenRouter nhưng vẫn dense-only; frontend hiện gọi `/api/chat/openai`.
+- Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker/ContextBuilder nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng hybrid/reranker/ContextBuilder và gọi OpenRouter qua OpenAI Agents SDK; frontend hiện gọi `/api/chat/openai`.
 - Trạng thái dữ liệu raw hiện có hai file export giống hệt nhau theo checksum; từ các lần làm việc tiếp theo người dùng muốn dùng `database_export_2026-01-23T02-02-46.json`, trong khi code hiện tại vẫn đọc file ngày `2026-01-14`.
 - Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 63 files, 478 nodes, 773 edges, backend `node:sqlite` full WAL.
 

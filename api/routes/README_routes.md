@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-01 20:40 +07 - Cập nhật `chat_openai.py` sau khi nâng cấp lên v2: hybrid retrieval, BM25/reranker từ `core.startup`, `ContextBuilder`, rate limit in-memory; `chat.py` cũng chuyển sang `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api/routes` sau buổi 7, đối chiếu với mã nguồn route hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả `chat_openai.py` và export `chat_openai_router` cho endpoint `POST /api/chat/openai`.
 - 2026-08-01 17:58 +07 - Cập nhật `chat.py` sau p2: route `/api/chat` dùng hybrid retrieval, BM25/reranker từ `core.startup` và rate limit in-memory.
@@ -10,7 +11,7 @@
 
 Thư mục `api/routes` chứa các route được đăng ký vào FastAPI app.
 
-Hiện tại thư mục có route chat hybrid dùng legacy generator, route chat OpenRouter dùng dense retriever, và file gom router để `api/app.py` import.
+Hiện tại thư mục có hai route chat đều dùng luồng v2 retrieval (hybrid + BM25 + reranker + `ContextBuilder`): `chat.py` gọi legacy generator, `chat_openai.py` gọi OpenRouter generator; cùng file gom router để `api/app.py` import.
 
 ## File Tài Liệu Trong Thư Mục
 
@@ -48,7 +49,7 @@ Vai trò và luồng hoạt động:
 - `chat.py` nhận câu hỏi từ client qua API `POST /api/chat`.
 - `ChatRequest` nhận `query` và `session_id` tùy chọn.
 - `ChatResponse` trả `answer`, `sources` và `session_id`.
-- `chat_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker, tự build context bằng `"\n\n".join(...)`, gọi `generate_answer(context, question)`, rồi trả câu trả lời và sources.
+- `chat_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker, build context bằng `ContextBuilder`, gọi `generate_answer(context, question)`, rồi trả câu trả lời và sources.
 - Input chính là JSON body dạng `{"query": "...", "session_id": "..."}`.
 - Output chính là JSON response theo `ChatResponse`.
 - Trạng thái hiện tại: file import được. Khi chạy thật, route phụ thuộc Qdrant collection hybrid có named vector `dense`, embedding model, BM25 đã được `core/startup.py` khởi tạo, reranker nếu có, và `llm/generator.py`.
@@ -78,11 +79,17 @@ File này đã có mã nguồn.
 Nội dung chính:
 
 - Import `APIRouter` và `HTTPException`.
+- Import `Request`.
 - Import `BaseModel` và `Field` từ Pydantic.
-- Import `retrieve` từ `retrieval.retriever`.
+- Import `hybrid_retrieve` từ `retrieval.hybrid_retriever`.
+- Import `get_bm25` và `get_reranker` từ `core.startup`.
+- Import `ContextBuilder` từ `retrieval.context_builder`.
 - Import `generate_answer_async` từ `llm.generator_openai`.
 - Đọc `MAX_QUERY_LENGTH` từ biến môi trường, mặc định `500`.
-- Tạo dictionary `sessions` trong memory.
+- Đọc `RATE_LIMIT_PER_MINUTE` từ biến môi trường, mặc định `60`.
+- Đọc `reranking.top_k` từ settings vào hằng `RERRANKING_TOP_K`.
+- Tạo dictionary `sessions` và `rate_limit_storage` trong memory.
+- Định nghĩa helper `check_rate_limit(client_ip)`.
 - Định nghĩa Pydantic model riêng `ChatRequest`.
 - Định nghĩa Pydantic model riêng `ChatResponse`.
 - Định nghĩa endpoint `POST /chat/openai`.
@@ -93,10 +100,11 @@ Vai trò và luồng hoạt động:
 - File nhận câu hỏi từ frontend qua API mới.
 - `ChatRequest` nhận `query` và `session_id` tùy chọn.
 - `ChatResponse` trả `answer`, `sources` và `session_id`.
-- `chat_openai_endpoint(request)` strip query, tạo session id nếu chưa có, gọi `retrieve(question)`, build context từ document truy xuất được, gọi `await generate_answer_async(context, question)`, rồi trả câu trả lời và sources.
+- `chat_openai_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker (cắt về `RERRANKING_TOP_K` nếu không), build context bằng `ContextBuilder`, gọi `await generate_answer_async(context, question)`, rồi trả câu trả lời và sources.
+- Khi vượt rate limit in-memory, route trả `429`; khi BM25 chưa khởi tạo, route trả `503`.
 - Input chính là JSON body dạng `{"query": "...", "session_id": "..."}`.
 - Output chính là JSON response theo `ChatResponse`.
-- Trạng thái hiện tại: file có automated test trong `tests/test_api_chat_openai.py`; test monkeypatch retrieval và generator nên không gọi Qdrant hoặc OpenRouter thật.
+- Trạng thái hiện tại: file có automated test trong `tests/test_api_chat_openai.py`; test monkeypatch `hybrid_retrieve`, `get_bm25`, `get_reranker` và `generate_answer_async` nên không gọi Qdrant hoặc OpenRouter thật.
 
 ## Cách Hoạt Động Hiện Tại
 
