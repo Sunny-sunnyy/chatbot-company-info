@@ -222,7 +222,9 @@ Khi hoàn thành, hãy trả lời ngắn gọn:
 - Đã chạy kiểm tra gì.
 - Có commit hay không. Mặc định là không commit nếu tôi chưa yêu cầu.
 
+## Tôi đã hoàn thành p2 của dự án, dưới đây là tài liệu mô tả chi tiết toàn bộ dự án hiện tại
 
+- Đã thêm tài liệu hướng dẫn cực chi tiết cho toàn bộ hệ thống: `tai_lieu/rag_system_pipeline_deep_dive.md`
 
 ## Đọc cả các hướng dẫn/link liên quan nếu thực sự cần để hiểu đúng context.
 
