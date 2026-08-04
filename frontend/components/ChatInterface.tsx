@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Send, Bot, User, Image as ImageIcon } from 'lucide-react';
 import { chatService, type ChatMessage } from '@/lib/api';
 
@@ -23,39 +25,65 @@ export default function ChatInterface() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: input,
-    };
+    const question = input;
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { role: 'user', content: question }]);
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', sources: [] }]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await chatService.sendMessage({
-        query: input,
-        session_id: sessionId || undefined,
-      });
-
-      if (response.session_id) {
-        setSessionId(response.session_id);
-      }
-
-      const assistantMessage: ChatMessage = {
-        role: 'assistant',
-        content: response.answer,
-        sources: response.sources || [],
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      await chatService.sendMessageStream(
+        { query: question, session_id: sessionId || undefined },
+        {
+          onMeta: (sid) => {
+            if (sid) setSessionId(sid);
+          },
+          onDelta: (delta) => {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last && last.role === 'assistant') {
+                next[next.length - 1] = { ...last, content: last.content + delta };
+              }
+              return next;
+            });
+          },
+          onSources: (sources) => {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last && last.role === 'assistant') {
+                next[next.length - 1] = { ...last, sources };
+              }
+              return next;
+            });
+          },
+          onDone: (payload) => {
+            if (payload.session_id) setSessionId(payload.session_id);
+          },
+          onError: (message) => {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last && last.role === 'assistant') {
+                next[next.length - 1] = { ...last, content: message };
+              }
+              return next;
+            });
+          },
+        }
+      );
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage: ChatMessage = {
-        role: 'assistant',
-        content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.',
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last && last.role === 'assistant') {
+          next[next.length - 1] = { ...last, content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.' };
+        }
+        return next;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +100,14 @@ export default function ChatInterface() {
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message, index) => (
+              {messages.map((message, index) => {
+                const isStreamingPlaceholder =
+                  message.role === 'assistant' &&
+                  message.content.length === 0 &&
+                  isLoading &&
+                  index === messages.length - 1;
+
+                return (
                 <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {message.role === 'assistant' && (
                     <div className="flex-shrink-0">
@@ -82,9 +117,45 @@ export default function ChatInterface() {
                     </div>
                   )}
                   
-                  <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${message.role === 'user' ? 'bg-green-600 text-white' : 'bg-white text-gray-800 shadow-md'}`}>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    
+                  <div className={`max-w-[70%] min-w-0 break-words rounded-2xl px-4 py-3 ${message.role === 'user' ? 'bg-green-600 text-white' : 'bg-white text-gray-800 shadow-md'}`}>
+                    {message.role === 'assistant' ? (
+                      isStreamingPlaceholder ? (
+                        <div className="flex gap-1 py-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <p className="my-1">{children}</p>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          ul: ({ children }) => <ul className="list-disc pl-5 my-1 space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-5 my-1 space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="my-0.5">{children}</li>,
+                          a: ({ href, children }) => (
+                            <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 underline break-words">
+                              {children}
+                            </a>
+                          ),
+                          code: ({ className, children }) => (
+                            <code className={`${className ?? ''} bg-gray-100 px-1 py-0.5 rounded text-sm break-all`}>
+                              {children}
+                            </code>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="bg-gray-100 p-2 rounded-lg overflow-x-auto my-2 text-sm">{children}</pre>
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                      )
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                    )}
+
                     {/* Display images from sources */}
                     {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
                       <div className="mt-3 space-y-2">
@@ -148,24 +219,8 @@ export default function ChatInterface() {
                     </div>
                   )}
                 </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl px-4 py-3 shadow-md">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
           )}

@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật sau khi chuyển `/api/chat/openai` sang SSE: `tests/test_api_chat_openai.py` consume `StreamingResponse.body_iterator` và parse SSE, happy path kiểm tra chuỗi event `meta` → nhiều `delta` → `sources` → `done`, case không có documents, case reranker, session lưu full answer, 503/429; `tests/test_llm_generator_openai.py` thêm test `stream_answer_async()` bằng fake `Runner.run_streamed` (sync) với `ResponseTextDeltaEvent` và test bỏ qua event không phải text delta.
 - 2026-08-01 22:04 +07 - Bổ sung mô tả `tests/test_context_builder.py` và cập nhật trạng thái test theo route OpenRouter hybrid hiện tại.
 - 2026-08-01 20:40 +07 - Cập nhật sau khi nâng cấp `/api/chat/openai` lên v2: test route giờ cover luồng hybrid + rate limit 429 + BM25 chưa sẵn sàng 503.
 - 2026-07-27 16:03 +07 - Tạo README cho thư mục `tests` sau khi thêm automated tests cho luồng OpenRouter isolated path.
@@ -43,6 +44,7 @@ Vai trò hiện tại:
 - Kiểm tra thiếu `OPENROUTER_API_KEY`.
 - Kiểm tra happy path bằng monkeypatch `Runner.run`, không gọi OpenRouter thật.
 - Kiểm tra `ModelSettings.extra_body` có `{"reasoning": {"effort": "none"}}`.
+- Test `llm.generator_openai.stream_answer_async`: context rỗng, question rỗng, thiếu API key; happy path monkeypatch `Runner.run_streamed` bằng fake sync function trả `FakeStreamingResult` có `stream_events()` yield `ResponseTextDeltaEvent`; test bỏ qua event không phải text delta (`run_item_stream_event`, data không phải `ResponseTextDeltaEvent`). Các test không gọi OpenRouter thật.
 
 ### `test_api_chat_openai.py`
 
@@ -51,12 +53,16 @@ File này đã có mã nguồn.
 Vai trò hiện tại:
 
 - Test `api.routes.chat_openai.chat_openai_endpoint`.
-- Monkeypatch `hybrid_retrieve(...)`, `get_bm25(...)`, `get_reranker(...)` và `generate_answer_async(...)` để không gọi Qdrant, BM25/reranker thật hoặc OpenRouter.
+- Monkeypatch `hybrid_retrieve(...)`, `get_bm25(...)`, `get_reranker(...)` và `stream_answer_async(...)` để không gọi Qdrant, BM25/reranker thật hoặc OpenRouter.
 - Dùng object `FakeRequest` giả thay cho `Request` của Starlette; endpoint chỉ truy cập `req.client.host`.
 - Gọi trực tiếp async endpoint function bằng `asyncio.run(...)` để tránh phụ thuộc `TestClient` trong môi trường hiện tại.
-- Happy path kiểm tra response trả `answer`, `sources` và `session_id`.
+- Vì endpoint trả `StreamingResponse`, helper `_collect_sse(response)` consume `response.body_iterator` (hỗ trợ chunk dạng str lẫn bytes) và parse SSE block tách bằng `\n\n` thành list `(event_name, data)`.
+- Happy path kiểm tra `media_type == "text/event-stream"` và chuỗi event `meta` → 3 `delta` → `sources` → `done`, delta ghép lại bằng full answer, metadata source đúng, `session_id` khớp giữa `meta` và `done`, và session in-memory lưu đúng question/answer/sources sau khi stream hoàn tất.
+- Case không có documents: chuỗi event `meta` → `delta` (câu không tìm thấy thông tin) → `sources` rỗng → `done`.
+- Case reranker sẵn sàng: `FakeReranker` ghi lại `(query, top_k)` và số source trong event `sources` bằng `RERRANKING_TOP_K`.
 - Case 429 khi vượt rate limit in-memory (monkeypatch `check_rate_limit(...)` trả `False`).
 - Case 503 khi `get_bm25()` trả `None` (BM25 chưa khởi tạo).
+- Test sliding window của `check_rate_limit` với `time.time` được monkeypatch.
 
 ### `test_context_builder.py`
 

@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật mô tả `Project_status.md` sau khi triển khai streaming + Markdown: `/api/chat/openai` trả SSE, `stream_answer_async()` dùng `Runner.run_streamed`, frontend dùng `fetch` + `react-markdown`, tests cập nhật theo SSE contract và smoke test E2E stream 276 delta thành công.
 - 2026-08-04 15:41 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` tắt Uvicorn reload để tránh WatchFiles reload toàn repo làm kẹt backend startup.
 - 2026-08-01 22:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xác nhận `/api/chat/openai` dùng hybrid retrieval và cập nhật số liệu CodeGraph mới nhất.
 - 2026-08-01 20:40 +07 - Cập nhật mô tả `Project_status.md` sau khi nâng cấp `/api/chat/openai` lên v2 và ghi nhận pipeline hybrid chạy thành công.
@@ -65,7 +66,8 @@ Nội dung hiện có:
 - Mốc sau `tai_lieu/p2/5.txt`, `tai_lieu/p2/6.txt` và `tai_lieu/p2/7.txt`: repo có `vectorstore/hybrid_index.py`, `scoring/bm25.py` và `retrieval/hybrid_retriever.py`.
 - Mốc sau `tai_lieu/p2/8.txt` và `tai_lieu/p2/9.txt`: repo có `retrieval/hybrid_retriever.py` trộn dense score với BM25 score, folder `reranking` với `BaseReranker`, `CrossEncoderModel`, `CrossEncoderReranker`, và `retrieval/context_builder.py`.
 - Mốc sau khi hoàn thành `tai_lieu/p2/10.txt`: repo có `core/startup.py` để khởi tạo sparse embedder/BM25/reranker từ Qdrant, `vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `vectorstore/upsert.py` build/upsert hybrid points, `api/app.py` gọi startup RAG components, `api/health.py` trả trạng thái RAG components và `api/routes/chat.py` dùng hybrid retrieval + reranker.
-- Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker/ContextBuilder nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng hybrid/reranker/ContextBuilder và gọi OpenRouter qua OpenAI Agents SDK; frontend hiện gọi `/api/chat/openai`.
+- Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker/ContextBuilder nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng hybrid/reranker/ContextBuilder, gọi OpenRouter qua OpenAI Agents SDK và trả SSE stream `text/event-stream` (`meta`/`delta`/`sources`/`done`/`error`); frontend hiện gọi `/api/chat/openai` qua `fetch` streaming và render Markdown live bằng `react-markdown` + `remark-gfm`.
+- Mốc sau khi triển khai streaming + Markdown (2026-08-04 17:33 +07): `llm/generator_openai.py` có `stream_answer_async()` dùng `Runner.run_streamed()` (sync, không `await`); `api/routes/chat_openai.py` trả `StreamingResponse`; `frontend/lib/api.ts` có `sendMessageStream()` dùng `fetch` + buffer parse SSE; `ChatInterface.tsx` append delta vào assistant placeholder và render bằng `ReactMarkdown`; tests route/generator cập nhật theo SSE contract, smoke test E2E stream 276 delta thành công.
 - Trạng thái dữ liệu raw hiện có hai file export giống hệt nhau theo checksum; từ các lần làm việc tiếp theo người dùng muốn dùng `database_export_2026-01-23T02-02-46.json`, trong khi code hiện tại vẫn đọc file ngày `2026-01-14`.
 - Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 64 files, 509 nodes, 854 edges, backend `node:sqlite` full WAL.
 

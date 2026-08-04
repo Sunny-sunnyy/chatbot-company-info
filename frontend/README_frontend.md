@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi triển khai streaming + Markdown: `frontend/lib/api.ts` thêm `sendMessageStream()` dùng `fetch` + `getReader` parse SSE thay cho `sendMessage` Axios; `ChatInterface.tsx` thêm assistant placeholder, append delta, gắn sources khi nhận event, render Markdown live bằng `react-markdown` + `remark-gfm`; dependency mới `react-markdown` (10.1.0) và `remark-gfm` (4.0.1) đã thêm vào `package.json`.
 - 2026-08-01 22:04 +07 - Cập nhật trạng thái endpoint: frontend vẫn gọi `/api/chat/openai`, route này hiện cũng dùng hybrid retrieval + BM25 + reranker + `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README tổng quan cho thư mục `frontend` sau buổi 7, đối chiếu với mã nguồn Next.js hiện tại và kết quả build frontend.
 - 2026-07-27 16:03 +07 - Cập nhật trạng thái frontend sau khi `frontend/lib/api.ts` chuyển sang endpoint OpenRouter `POST /api/chat/openai` và ghi hướng dẫn đổi lại endpoint cũ.
@@ -57,6 +58,8 @@ Dependency chính hiện có:
 - `react-dom`
 - `axios`
 - `lucide-react`
+- `react-markdown`
+- `remark-gfm`
 
 ### `package-lock.json`
 
@@ -150,6 +153,8 @@ Frontend gọi endpoint chat OpenRouter tại:
 POST http://localhost:8000/api/chat/openai
 ```
 
+Endpoint này trả SSE stream `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error`. Frontend đọc stream bằng `fetch()` + `response.body.getReader()` trong `frontend/lib/api.ts` (`sendMessageStream`), không dùng Axios cho đường streaming này. Nội dung assistant được render Markdown live bằng `ReactMarkdown` + `remarkGfm` trong `ChatInterface.tsx`.
+
 Endpoint cũ vẫn tồn tại ở backend:
 
 ```text
@@ -160,9 +165,7 @@ Endpoint này sau p2 đã dùng hybrid retrieval, BM25 và reranker, nhưng gọ
 
 ## Cách Đổi Lại Endpoint Cũ
 
-Nếu muốn frontend gọi lại endpoint legacy `POST /api/chat`, sửa file `frontend/lib/api.ts`.
-
-Đổi endpoint trong `chatService.sendMessage(...)` từ:
+Nếu muốn frontend gọi lại endpoint legacy `POST /api/chat`, sửa file `frontend/lib/api.ts`. Lưu ý endpoint legacy trả JSON `ChatResponse` một lần, không phải SSE, nên cần thay luồng `sendMessageStream` bằng client Axios gọi trực tiếp (hàm `sendMessage` cũ đã bị bỏ). Đổi URL trong `sendMessageStream` từ:
 
 ```ts
 `${API_URL}/api/chat/openai`

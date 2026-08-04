@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import AsyncIterator
 
 from agents import (
     Agent,
@@ -9,6 +10,7 @@ from agents import (
     set_tracing_disabled,
 )
 from openai import APIConnectionError, APITimeoutError, AsyncOpenAI, OpenAIError
+from openai.types.responses import ResponseTextDeltaEvent
 
 from core.settings_loader import load_settings
 from llm.prompt import SYSTEM_PROMPT, build_prompt
@@ -105,3 +107,47 @@ async def generate_answer_async(context: str, question: str) -> str:
     except Exception as error:
         logger.error(f"Error during answer generation: {error}", exc_info=True)
         return "Đã xảy ra lỗi trong quá trình tạo câu trả lời."
+
+
+async def stream_answer_async(context: str, question: str) -> AsyncIterator[str]:
+    """Stream answer text deltas from OpenRouter via OpenAI Agents SDK."""
+    validation_error = _validate_inputs(context, question)
+    if validation_error:
+        yield validation_error
+        return
+
+    if MODEL_PROVIDER != "openrouter":
+        logger.error(f"Unsupported model provider for OpenRouter generator: {MODEL_PROVIDER}")
+        yield "Nhà cung cấp mô hình không được hỗ trợ."
+        return
+
+    if not OPENROUTER_API_KEY:
+        logger.error("OPENROUTER_API_KEY is not configured.")
+        yield "Thiếu cấu hình API key cho OpenRouter."
+        return
+
+    prompt = build_prompt(context, question)
+    logger.info(f"Streaming answer using provider={MODEL_PROVIDER}, model={MODEL_NAME}")
+
+    try:
+        agent = _build_openrouter_agent()
+        result = Runner.run_streamed(agent, prompt)
+        async for event in result.stream_events():
+            if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
+                yield event.data.delta
+        logger.info("Answer streaming completed successfully.")
+    except ValueError as error:
+        logger.error(str(error))
+        yield "Thiếu cấu hình API key cho OpenRouter."
+    except APITimeoutError:
+        logger.error(f"OpenRouter request timeout after {MODEL_TIMEOUT}s")
+        yield "Yêu cầu xử lý quá lâu. Vui lòng thử lại với câu hỏi ngắn gọn hơn."
+    except APIConnectionError as error:
+        logger.error(f"Cannot connect to OpenRouter: {error}")
+        yield "Không thể kết nối đến dịch vụ AI. Vui lòng kiểm tra cấu hình."
+    except OpenAIError as error:
+        logger.error(f"OpenRouter API error: {error}")
+        yield "Xin lỗi, mô hình ngôn ngữ đang gặp vấn đề. Vui lòng thử lại sau."
+    except Exception as error:
+        logger.error(f"Error during answer streaming: {error}", exc_info=True)
+        yield "Đã xảy ra lỗi trong quá trình tạo câu trả lời."

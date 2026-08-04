@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi triển khai streaming + Markdown: `POST /api/chat/openai` trả SSE `text/event-stream` (`meta`/`delta`/`sources`/`done`/`error`); `llm/generator_openai.py` có `stream_answer_async()` dùng `Runner.run_streamed`; frontend gọi endpoint qua `fetch` streaming trong `sendMessageStream` và render Markdown live bằng `react-markdown` + `remark-gfm` (dependency mới trong `frontend/package.json`).
 - 2026-08-04 15:41 +07 - Tắt Uvicorn reload trong `api/app.py` để tránh WatchFiles theo dõi toàn repo và restart/kẹt startup khi Qdrant/log/cache thay đổi; backend vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 22:04 +07 - Cập nhật trạng thái CodeGraph mới nhất và xác nhận luồng frontend hiện gọi `/api/chat/openai` OpenRouter với hybrid retrieval.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2 (hybrid + BM25 + reranker + ContextBuilder, vẫn OpenRouter) và ghi nhận pipeline hybrid đã chạy thành công với collection hybrid 450 points.
@@ -200,8 +201,8 @@ Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọ
 
 `reranking` hiện đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker` để chấm điểm lại document theo cặp query/document. Endpoint `POST /api/chat` hiện gọi reranker lấy từ `core/startup.py` nếu component này đã khởi tạo thành công. `retrieval/context_builder.py` đã có `ContextBuilder` và cả hai route chat (`/api/chat`, `/api/chat/openai`) hiện đều dùng class này để build context.
 
-Frontend hiện gọi endpoint OpenRouter mới. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat`, xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
+Frontend hiện gọi endpoint OpenRouter mới qua SSE streaming (`sendMessageStream` dùng `fetch`) và render câu trả lời Markdown live bằng `react-markdown` + `remark-gfm`. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat` (trả JSON một lần), xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 
 `api/app.py` hiện chạy Uvicorn với `host="0.0.0.0"`, port `8000` và `reload=False` khi dùng `uv run python -m api.app`.
 
-Lưu ý tích hợp hiện tại: `config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker + `ContextBuilder` nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter qua OpenAI Agents SDK, đồng thời dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` giống luồng v2. `retrieval/retriever.py` (dense-only) được giữ làm legacy nhưng không còn route nào gọi. Frontend hiện gọi `POST /api/chat/openai`.
+Lưu ý tích hợp hiện tại: `config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker + `ContextBuilder` nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter qua OpenAI Agents SDK, dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` giống luồng v2, và trả SSE stream `text/event-stream` thay vì JSON một lần. `retrieval/retriever.py` (dense-only) được giữ làm legacy nhưng không còn route nào gọi. Frontend hiện gọi `POST /api/chat/openai` qua `fetch` streaming và render Markdown live.

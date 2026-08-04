@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật `generator_openai.py` sau khi thêm hàm streaming `stream_answer_async()`: hàm này dùng `Runner.run_streamed()` (sync, trả `RunResultStreaming` trực tiếp, không `await`), lặp `async for event in result.stream_events()` và yield text delta khi event là `raw_response_event` và data là `ResponseTextDeltaEvent`; `generate_answer_async()` giữ nguyên dùng `Runner.run()` cho non-stream.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
 - 2026-07-24 20:18 +07 - Rút gọn nội dung vì các file trong thư mục hiện chưa có dòng mã nguồn nào.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả trạng thái và nhiệm vụ hiện tại của từng file trong thư mục.
@@ -89,24 +90,27 @@ Nội dung hiện tại:
 
 - Import `Agent`, `ModelSettings`, `OpenAIChatCompletionsModel`, `Runner` và `set_tracing_disabled` từ OpenAI Agents SDK.
 - Import `AsyncOpenAI` và các exception OpenAI client.
+- Import `ResponseTextDeltaEvent` từ `openai.types.responses`.
 - Import `SYSTEM_PROMPT` và `build_prompt` từ `llm.prompt`.
 - Đọc cấu hình `llm` từ `core.settings_loader.load_settings()`.
 - Định nghĩa helper `_validate_inputs(context, question)`.
 - Định nghĩa helper `_build_openrouter_agent()`.
 - Định nghĩa async function `generate_answer_async(context: str, question: str) -> str`.
+- Định nghĩa async generator `stream_answer_async(context: str, question: str)`.
 
 Vai trò và luồng hoạt động:
 
 - `generator_openai.py` chịu trách nhiệm sinh câu trả lời bằng OpenRouter qua OpenAI Agents SDK.
 - Input chính là `context: str` và `question: str`.
-- Output là câu trả lời dạng `str`.
-- `generate_answer_async()` kiểm tra context/question rỗng, kiểm tra provider `openrouter`, kiểm tra API key OpenRouter đã được cấu hình, build prompt, tạo OpenRouter-compatible `AsyncOpenAI`, tạo `OpenAIChatCompletionsModel`, tạo `Agent` tên `nmk_chatbot`, rồi gọi `await Runner.run(agent, prompt)`.
+- `generate_answer_async()` trả câu trả lời dạng `str`: kiểm tra context/question rỗng, kiểm tra provider `openrouter`, kiểm tra API key OpenRouter đã được cấu hình, build prompt, tạo OpenRouter-compatible `AsyncOpenAI`, tạo `OpenAIChatCompletionsModel`, tạo `Agent` tên `nmk_chatbot`, rồi gọi `await Runner.run(agent, prompt)`.
+- `stream_answer_async()` yield từng text delta dạng `str`: dùng chung `_validate_inputs()`, `_build_openrouter_agent()` và `build_prompt()`, gọi `Runner.run_streamed(agent, prompt)` (sync function trong SDK 0.18.3, trả `RunResultStreaming` trực tiếp, không `await`), lặp `async for event in result.stream_events()`, và chỉ yield `event.data.delta` khi `event.type == "raw_response_event"` và `event.data` là `ResponseTextDeltaEvent`.
 - File dùng `ModelSettings` để truyền `temperature` và `max_tokens`.
 - File dùng `ModelSettings.extra_body={"reasoning": {"effort": "none"}}` để tắt reasoning tokens ở OpenRouter.
 - File truyền `timeout` vào `AsyncOpenAI`.
 - File gọi `set_tracing_disabled(True)` trước khi chạy OpenRouter để tránh yêu cầu tracing về OpenAI platform trong luồng dùng OpenRouter.
+- Cả hai hàm trả/yield thông báo tiếng Việt an toàn khi thiếu API key, provider không hỗ trợ, timeout, lỗi kết nối hoặc lỗi API; không expose stack trace hoặc secret.
 - File không đọc hoặc in nội dung secret; API key được lấy từ settings đã được nạp từ biến môi trường.
-- Trạng thái test hiện tại: `tests/test_llm_generator_openai.py` kiểm tra các nhánh chính và cấu hình `extra_body` bằng monkeypatch, không gọi OpenRouter thật.
+- Trạng thái test hiện tại: `tests/test_llm_generator_openai.py` kiểm tra cả `generate_answer_async()` (monkeypatch `Runner.run`) và `stream_answer_async()` (monkeypatch `Runner.run_streamed` bằng fake sync function trả `FakeStreamingResult`), không gọi OpenRouter thật.
 
 ### `__init__.py`
 
@@ -132,8 +136,9 @@ Luồng OpenRouter mới theo `generator_openai.py`:
 2. Build prompt bằng `llm.prompt.build_prompt`.
 3. Kiểm tra provider trong settings là `openrouter`.
 4. Tạo OpenRouter-compatible model bằng OpenAI Agents SDK.
-5. Gọi `Runner.run(...)` async để sinh câu trả lời.
-6. Trả về câu trả lời hoặc thông báo lỗi tiếng Việt.
+5. Đường non-stream: gọi `Runner.run(...)` async để sinh câu trả lời full string.
+6. Đường streaming: gọi `Runner.run_streamed(...)` rồi yield từng text delta từ `stream_events()`.
+7. Trả về/yield câu trả lời hoặc thông báo lỗi tiếng Việt.
 
 Với model hiện tại `qwen/qwen3.5-9b`, nếu không tắt reasoning, OpenRouter có thể trả HTTP 200 nhưng `result.final_output` rỗng vì toàn bộ `max_tokens` bị dùng cho reasoning tokens. Vì vậy `generator_openai.py` hiện tắt reasoning bằng `extra_body`.
 

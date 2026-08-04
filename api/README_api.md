@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi chuyển `POST /api/chat/openai` sang SSE stream: endpoint trả `StreamingResponse` media type `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error`; route gọi `stream_answer_async()` thay vì `generate_answer_async()`; lỗi trước stream vẫn dùng `HTTPException` 400/429/503.
 - 2026-08-04 15:41 +07 - Tắt `reload=True` trong entrypoint `api/app.py` để tránh WatchFiles reload toàn repo khi Qdrant/log/cache thay đổi trong lúc startup; backend vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2: route dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và có rate limit in-memory theo IP; `/api/chat` cũng chuyển sang dùng `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api` sau buổi 7, đối chiếu với mã nguồn FastAPI hiện tại.
@@ -118,7 +119,7 @@ Route hiện có:
 
 `POST /api/chat` hiện gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup đã khởi tạo được, build context bằng `ContextBuilder` và gọi `generate_answer(context, question)` từ legacy `llm/generator.py`. Route này có rate limit in-memory theo IP qua `RATE_LIMIT_PER_MINUTE`.
 
-`POST /api/chat/openai` hiện gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup khởi tạo được, build context bằng `ContextBuilder` và gọi `await generate_answer_async(context, question)` từ `llm/generator_openai.py`. Route này cũng có rate limit in-memory theo IP như `/api/chat`.
+`POST /api/chat/openai` hiện trả `StreamingResponse` media type `text/event-stream`. Route vẫn gọi `hybrid_retrieve(question, bm25)`, rerank bằng `CrossEncoderReranker` nếu startup khởi tạo được, build context bằng `ContextBuilder`, rồi gọi `stream_answer_async(context, question)` từ `llm/generator_openai.py` để yield từng text delta. Các event SSE gồm `meta` (session_id), `delta` (từng phần text), `sources`, `done` (answer + session_id) và `error` (lỗi sau khi stream bắt đầu). Lỗi trước khi stream bắt đầu (`400` query rỗng, `429` rate limit, `503` BM25 chưa khởi tạo) vẫn dùng `HTTPException`. Route này cũng có rate limit in-memory theo IP như `/api/chat`.
 
 `llm/generator.py` được giữ nguyên làm legacy Ollama generator. Luồng OpenRouter mới nằm trong `llm/generator_openai.py`.
 

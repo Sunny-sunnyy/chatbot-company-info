@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 17:33 +07 - Cập nhật `chat_openai.py` sau khi chuyển sang SSE streaming: endpoint `POST /chat/openai` trả `StreamingResponse` `text/event-stream` với event `meta`/`delta`/`sources`/`done`/`error`; route gọi `stream_answer_async()` từ `llm/generator_openai.py`; helper `_sse_event()` format frame SSE; test cập nhật consume `body_iterator` và parse SSE.
 - 2026-08-01 20:40 +07 - Cập nhật `chat_openai.py` sau khi nâng cấp lên v2: hybrid retrieval, BM25/reranker từ `core.startup`, `ContextBuilder`, rate limit in-memory; `chat.py` cũng chuyển sang `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api/routes` sau buổi 7, đối chiếu với mã nguồn route hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả `chat_openai.py` và export `chat_openai_router` cho endpoint `POST /api/chat/openai`.
@@ -80,18 +81,20 @@ Nội dung chính:
 
 - Import `APIRouter` và `HTTPException`.
 - Import `Request`.
+- Import `json` và `StreamingResponse` từ `fastapi.responses`.
 - Import `BaseModel` và `Field` từ Pydantic.
 - Import `hybrid_retrieve` từ `retrieval.hybrid_retriever`.
 - Import `get_bm25` và `get_reranker` từ `core.startup`.
 - Import `ContextBuilder` từ `retrieval.context_builder`.
-- Import `generate_answer_async` từ `llm.generator_openai`.
+- Import `stream_answer_async` từ `llm.generator_openai`.
 - Đọc `MAX_QUERY_LENGTH` từ biến môi trường, mặc định `500`.
 - Đọc `RATE_LIMIT_PER_MINUTE` từ biến môi trường, mặc định `60`.
 - Đọc `reranking.top_k` từ settings vào hằng `RERRANKING_TOP_K`.
 - Tạo dictionary `sessions` và `rate_limit_storage` trong memory.
 - Định nghĩa helper `check_rate_limit(client_ip)`.
+- Định nghĩa helper `_sse_event(event, data)` format frame SSE `event: <type>\ndata: <json>\n\n`.
 - Định nghĩa Pydantic model riêng `ChatRequest`.
-- Định nghĩa Pydantic model riêng `ChatResponse`.
+- Định nghĩa Pydantic model riêng `ChatResponse` (giữ cho OpenAPI, route streaming không dùng `response_model`).
 - Định nghĩa endpoint `POST /chat/openai`.
 
 Vai trò và luồng hoạt động:
@@ -99,12 +102,12 @@ Vai trò và luồng hoạt động:
 - `chat_openai.py` là route OpenRouter song song với route legacy `chat.py`.
 - File nhận câu hỏi từ frontend qua API mới.
 - `ChatRequest` nhận `query` và `session_id` tùy chọn.
-- `ChatResponse` trả `answer`, `sources` và `session_id`.
-- `chat_openai_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, gọi `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker (cắt về `RERRANKING_TOP_K` nếu không), build context bằng `ContextBuilder`, gọi `await generate_answer_async(context, question)`, rồi trả câu trả lời và sources.
-- Khi vượt rate limit in-memory, route trả `429`; khi BM25 chưa khởi tạo, route trả `503`.
+- `chat_openai_endpoint(request, req)` lấy IP client, kiểm tra rate limit, strip query, tạo session id nếu chưa có, lấy BM25 và reranker từ `core.startup`, rồi trả `StreamingResponse(event_generator(), media_type="text/event-stream")`.
+- `event_generator()` yield event `meta` (session_id), chạy `hybrid_retrieve(question, bm25)`, rerank document nếu có reranker (cắt về `RERRANKING_TOP_K` nếu không), build context bằng `ContextBuilder`, gọi `stream_answer_async(context, question)` và yield event `delta` cho từng text delta, build sources, lưu session in-memory với full answer, rồi yield `sources` và `done`. Case không có documents: yield `meta`, một `delta` câu không tìm thấy thông tin, `sources` rỗng, `done`. Lỗi trong generator yield event `error` với message tiếng Việt an toàn.
+- Khi vượt rate limit in-memory, route trả `429`; khi BM25 chưa khởi tạo, route trả `503`; query rỗng trả `400` — các lỗi này xảy ra trước khi stream bắt đầu và vẫn dùng `HTTPException`.
 - Input chính là JSON body dạng `{"query": "...", "session_id": "..."}`.
-- Output chính là JSON response theo `ChatResponse`.
-- Trạng thái hiện tại: file có automated test trong `tests/test_api_chat_openai.py`; test monkeypatch `hybrid_retrieve`, `get_bm25`, `get_reranker` và `generate_answer_async` nên không gọi Qdrant hoặc OpenRouter thật.
+- Output chính là SSE stream dạng `event: <type>\ndata: <json>\n\n`.
+- Trạng thái hiện tại: file có automated test trong `tests/test_api_chat_openai.py`; test consume `response.body_iterator` để parse SSE, monkeypatch `hybrid_retrieve`, `get_bm25`, `get_reranker` và `stream_answer_async` nên không gọi Qdrant hoặc OpenRouter thật.
 
 ## Cách Hoạt Động Hiện Tại
 
