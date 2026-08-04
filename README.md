@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: tạo thư mục `backend/` làm runtime root cho toàn bộ Python backend; các folder `api`, `config`, `core`, `data`, `embedding`, `ingestion`, `llm`, `logs`, `reranking`, `retrieval`, `scoring`, `vectorstore`, `tests` đã nằm trong `backend/`; frontend, `.env`, Docker Compose, `pyproject.toml`, `uv.lock`, `qdrant_storage/`, `report/` và `tai_lieu/` vẫn ở root; lệnh backend chạy từ `backend/`.
 - 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi triển khai streaming + Markdown: `POST /api/chat/openai` trả SSE `text/event-stream` (`meta`/`delta`/`sources`/`done`/`error`); `llm/generator_openai.py` có `stream_answer_async()` dùng `Runner.run_streamed`; frontend gọi endpoint qua `fetch` streaming trong `sendMessageStream` và render Markdown live bằng `react-markdown` + `remark-gfm` (dependency mới trong `frontend/package.json`).
 - 2026-08-04 15:41 +07 - Tắt Uvicorn reload trong `api/app.py` để tránh WatchFiles theo dõi toàn repo và restart/kẹt startup khi Qdrant/log/cache thay đổi; backend vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 22:04 +07 - Cập nhật trạng thái CodeGraph mới nhất và xác nhận luồng frontend hiện gọi `/api/chat/openai` OpenRouter với hybrid retrieval.
@@ -25,11 +26,11 @@
 
 ## Nhiệm Vụ Thư Mục Gốc
 
-Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài liệu tổng quan, tài liệu tham khảo CodeGraph, cấu hình Docker Compose cho Qdrant, backend API và frontend Next.js của dự án.
+Thư mục gốc chứa cấu hình project Python, file khóa dependency, tài liệu tổng quan, tài liệu tham khảo CodeGraph, cấu hình Docker Compose cho Qdrant, frontend Next.js và thư mục `backend/` chứa toàn bộ Python backend runtime của dự án.
 
 CodeGraph đã được init local cho repo này bằng CLI `1.5.0`. Thư mục `.codegraph/` là index SQLite local, được ignore trong `.gitignore` và không nên commit.
 
-Trạng thái kiểm tra gần nhất ngày 2026-08-01 22:04 +07: `codegraph status .` báo `Index is up to date`, index có 64 files, 509 nodes, 854 edges, backend `node:sqlite` full WAL và journal `wal`.
+Trạng thái kiểm tra gần nhất ngày 2026-08-04 19:44 +07 (sau refactor layout): `codegraph status .` báo `Index is up to date`, index có 65 files, 538 nodes, 916 edges, backend `node:sqlite` full WAL và journal `wal`.
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau khi init: CodeGraph watch project và cập nhật graph khi file thay đổi. Nếu cần kiểm tra thủ công, dùng `codegraph status .`; nếu nghi ngờ index lệch, dùng `codegraph sync`.
 
@@ -57,25 +58,25 @@ File này hướng dẫn chạy Qdrant bằng Docker Compose, kiểm tra trạng
 
 File này là hướng dẫn chạy thủ công cho dự án hiện tại, gồm Qdrant, ingestion pipeline, backend FastAPI, health check, API chat và frontend.
 
-### `api/`
+### `backend/`
 
-Thư mục này chứa FastAPI backend của chatbot, gồm route chat legacy và route chat OpenRouter. README chi tiết nằm ở `api/README_api.md`.
+Thư mục này là runtime root của toàn bộ Python backend, gồm `api/`, `config/`, `core/`, `data/`, `embedding/`, `ingestion/`, `llm/`, `logs/`, `reranking/`, `retrieval/`, `scoring/`, `vectorstore/` và `tests/`. README chi tiết nằm ở `backend/README_backend.md`. Các lệnh backend chạy từ `backend/`.
 
 ### `frontend/`
 
 Thư mục này chứa frontend Next.js của chatbot. Frontend hiện gọi endpoint OpenRouter `POST /api/chat/openai`. README chi tiết nằm ở `frontend/README_frontend.md`.
 
-### `tests/`
+### `backend/tests/`
 
-Thư mục này chứa automated tests cho luồng OpenRouter mới. README chi tiết nằm ở `tests/README_tests.md`.
+Thư mục này nằm trong `backend/` và chứa automated tests cho luồng OpenRouter mới. README chi tiết nằm ở `backend/tests/README_tests.md`.
 
-### `scoring/`
+### `backend/scoring/`
 
-Thư mục này chứa code tính điểm BM25 cho hybrid retrieval. README chi tiết nằm ở `scoring/README_scoring.md`.
+Thư mục này nằm trong `backend/` và chứa code tính điểm BM25 cho hybrid retrieval. README chi tiết nằm ở `backend/scoring/README_scoring.md`.
 
-### `reranking/`
+### `backend/reranking/`
 
-Thư mục này chứa code rerank document bằng CrossEncoder trước khi build context cho LLM. README chi tiết nằm ở `reranking/README_reranking.md`.
+Thư mục này nằm trong `backend/` và chứa code rerank document bằng CrossEncoder trước khi build context cho LLM. README chi tiết nằm ở `backend/reranking/README_reranking.md`.
 
 ### `docker-compose.yml`
 
@@ -105,7 +106,7 @@ File này là lockfile dependency do `uv` quản lý.
 
 ## Nhiệm Vụ Các File Mã Nguồn
 
-Thư mục gốc hiện không còn file mã nguồn Python trực tiếp. Luồng backend hiện nằm trong thư mục `api`.
+Thư mục gốc hiện không còn file mã nguồn Python trực tiếp. Luồng backend hiện nằm trong thư mục `backend/api`.
 
 ## Lệnh Chạy Dự Án Bằng `uv`
 
@@ -124,25 +125,27 @@ docker compose down
 Nếu cần nạp lại dữ liệu vào Qdrant:
 
 ```bash
+cd backend
 uv run python -m ingestion.pipeline
 ```
 
 Sau cập nhật `p2/10`, pipeline build/upsert hybrid points và đã chạy thành công. Nếu chạy lại khi collection đang giữ schema cũ dense-only, xoá collection đó trước để pipeline tạo lại collection với named vector `dense` và sparse vector `sparse`.
 
-Pipeline hiện không còn tạo chunk từ `heroSlides.json`. File `data/processed/heroSlides.json` vẫn tồn tại như dữ liệu processed, nhưng `ingestion/chunking/heroSlides.py` đã bị xoá khỏi code hiện tại để giảm nhiễu retrieval.
+Pipeline hiện không còn tạo chunk từ `heroSlides.json`. File `backend/data/processed/heroSlides.json` vẫn tồn tại như dữ liệu processed, nhưng `backend/ingestion/chunking/heroSlides.py` đã bị xoá khỏi code hiện tại để giảm nhiễu retrieval.
 
-`data/raw` hiện có hai file export giống hệt nhau theo checksum:
+`backend/data/raw` hiện có hai file export giống hệt nhau theo checksum:
 
 ```text
 database_export_2026-01-14T02-32-14.json
 database_export_2026-01-23T02-02-46.json
 ```
 
-Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Trạng thái code hiện tại: `ingestion/load_data.py` vẫn đang đọc trực tiếp file ngày `2026-01-14`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
+Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Trạng thái code hiện tại: `backend/ingestion/load_data.py` vẫn đang đọc trực tiếp file ngày `2026-01-14`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
 
-Chạy backend FastAPI:
+Chạy backend FastAPI từ `backend/`:
 
 ```bash
+cd backend
 uv run python -m api.app
 ```
 
@@ -187,6 +190,8 @@ Trạng thái hiện tại: `frontend/node_modules/` tồn tại local tại th�
 
 ## Lưu Ý Chạy Hiện Tại
 
+Sau refactor layout, toàn bộ path Python backend trong mục này nằm trong thư mục `backend/`, ví dụ `backend/llm/generator.py`, `backend/core/startup.py`, `backend/config/settings.yaml`.
+
 `llm/generator.py` hiện được giữ nguyên làm legacy Ollama generator và chỉ hỗ trợ provider `ollama`.
 
 Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọi bởi endpoint `POST /api/chat/openai`.
@@ -203,6 +208,6 @@ Luồng OpenRouter mới nằm trong `llm/generator_openai.py` và được gọ
 
 Frontend hiện gọi endpoint OpenRouter mới qua SSE streaming (`sendMessageStream` dùng `fetch`) và render câu trả lời Markdown live bằng `react-markdown` + `remark-gfm`. Nếu muốn đổi frontend về endpoint legacy `POST /api/chat` (trả JSON một lần), xem hướng dẫn trong `frontend/README_frontend.md` hoặc `frontend/lib/README_lib.md`.
 
-`api/app.py` hiện chạy Uvicorn với `host="0.0.0.0"`, port `8000` và `reload=False` khi dùng `uv run python -m api.app`.
+`backend/api/app.py` hiện chạy Uvicorn với `host="0.0.0.0"`, port `8000` và `reload=False` khi chạy từ `backend/` bằng `uv run python -m api.app`.
 
-Lưu ý tích hợp hiện tại: `config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker + `ContextBuilder` nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter qua OpenAI Agents SDK, dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` giống luồng v2, và trả SSE stream `text/event-stream` thay vì JSON một lần. `retrieval/retriever.py` (dense-only) được giữ làm legacy nhưng không còn route nào gọi. Frontend hiện gọi `POST /api/chat/openai` qua `fetch` streaming và render Markdown live.
+Lưu ý tích hợp hiện tại: `backend/config/settings.yaml` đang đặt `llm.provider: openrouter`. Endpoint `POST /api/chat` đã dùng hybrid retrieval + reranker + `ContextBuilder` nhưng vẫn gọi legacy `llm/generator.py`, file này chỉ hỗ trợ provider `ollama`. Endpoint `POST /api/chat/openai` dùng OpenRouter qua OpenAI Agents SDK, dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` giống luồng v2, và trả SSE stream `text/event-stream` thay vì JSON một lần. `backend/retrieval/retriever.py` (dense-only) được giữ làm legacy nhưng không còn route nào gọi. Frontend hiện gọi `POST /api/chat/openai` qua `fetch` streaming và render Markdown live.

@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: `settings_loader.py` dùng `BACKEND_DIR` và `PROJECT_ROOT` để load settings từ `backend/config/settings.yaml` và `.env` từ root; `logging_setup.py` dùng `BASE_DIR` trỏ tới `backend/`; thư mục `core` đã nằm trong `backend/`.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:24 +07 - Bổ sung mô tả nhiệm vụ hiện tại của từng file trong thư mục.
@@ -38,9 +39,10 @@ File này đã có mã nguồn.
 Nội dung chính:
 
 - Import `os`, `yaml`, `Path` và `load_dotenv`.
-- Xác định `BASE_DIR` là thư mục gốc của dự án.
-- Xác định đường dẫn `config/settings.yaml`.
-- Xác định đường dẫn `.env`.
+- Xác định `BACKEND_DIR` là thư mục `backend/` (runtime root của Python backend).
+- Xác định `PROJECT_ROOT` là root workspace (cha của `backend/`).
+- Xác định `SETTINGS_PATH` là `backend/config/settings.yaml`.
+- Xác định `ENV_PATH` là `.env` ở root workspace.
 - Gọi `load_dotenv(ENV_PATH)`.
 - Định nghĩa hàm `load_settings()`.
 
@@ -73,9 +75,9 @@ File này đã có mã nguồn.
 Nội dung chính:
 
 - Import `logging.config`, `yaml` và `Path`.
-- Xác định `BASE_DIR` là thư mục gốc của dự án.
-- Xác định đường dẫn `config/logging.yaml`.
-- Xác định thư mục `logs`.
+- Xác định `BASE_DIR` là thư mục `backend/` (cha của `core/`).
+- Xác định đường dẫn `config/logging.yaml` trong `backend/`.
+- Xác định thư mục `logs` trong `backend/`.
 - Định nghĩa hàm `setup_logging()`.
 
 Hàm `setup_logging()` đang làm các việc sau:

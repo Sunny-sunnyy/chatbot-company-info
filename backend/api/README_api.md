@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: thư mục `api` đã nằm trong `backend/`; lệnh chạy backend từ `backend/` bằng `uv run python -m api.app`.
 - 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi chuyển `POST /api/chat/openai` sang SSE stream: endpoint trả `StreamingResponse` media type `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error`; route gọi `stream_answer_async()` thay vì `generate_answer_async()`; lỗi trước stream vẫn dùng `HTTPException` 400/429/503.
 - 2026-08-04 15:41 +07 - Tắt `reload=True` trong entrypoint `api/app.py` để tránh WatchFiles reload toàn repo khi Qdrant/log/cache thay đổi trong lúc startup; backend vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2: route dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và có rate limit in-memory theo IP; `/api/chat` cũng chuyển sang dùng `ContextBuilder`.
@@ -96,7 +97,7 @@ README chi tiết nằm ở `api/routes/README_routes.md`.
 
 ## Cách Chạy Hiện Tại
 
-Chạy backend từ thư mục gốc bằng `uv`:
+Chạy backend từ `backend/` bằng `uv`:
 
 ```bash
 uv run python -m api.app

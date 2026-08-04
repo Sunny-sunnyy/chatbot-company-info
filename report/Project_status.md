@@ -2,6 +2,8 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật trạng thái layout: tạo thư mục `backend/` làm runtime root cho Python backend; các folder `api`, `config`, `core`, `data`, `embedding`, `ingestion`, `llm`, `logs`, `reranking`, `retrieval`, `scoring`, `vectorstore`, `tests` đã nằm trong `backend/`; frontend, `.env`, Docker Compose, `qdrant_storage/`, `report/` và `tai_lieu/` vẫn ở root; `core/settings_loader.py` load settings từ `backend/config/settings.yaml` và `.env` từ root; lệnh backend chạy từ `backend/`; cập nhật số liệu CodeGraph mới nhất.
+- 2026-08-04 19:53 +07 - Audit nhanh sau refactor layout: xác nhận `backend/` có đủ 13 folder mục tiêu, các folder backend cũ không còn ở root, `settings_loader.py` trỏ đúng `backend/config/settings.yaml` và `.env` ở root; sửa các path hiện hành còn sót trong tài liệu từ root sang `backend/...`.
 - 2026-08-04 18:01 +07 - Sửa bug UI duplicate assistant khi stream trong `frontend/components/ChatInterface.tsx`: bỏ block loading indicator riêng ở cuối messages list; assistant placeholder cuối cùng đang stream hiển thị 3 chấm loading ngay trong bubble và tự chuyển sang `ReactMarkdown` khi delta đầu tiên tới; `npm run build` pass.
 - 2026-08-04 17:33 +07 - Cập nhật trạng thái sau khi triển khai streaming + Markdown: `POST /api/chat/openai` trả SSE `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error`; `llm/generator_openai.py` thêm `stream_answer_async()` dùng `Runner.run_streamed()`; `frontend/lib/api.ts` thêm `sendMessageStream()` dùng `fetch`; `ChatInterface.tsx` render Markdown live bằng `react-markdown` + `remark-gfm`; backend tests cập nhật theo SSE contract và smoke test E2E stream 276 delta thành công.
 - 2026-08-04 16:03 +07 - Cập nhật `ingestion/chunking/companyInfo.py`: chunk `contact_info` thêm cụm `Thông tin liên hệ của <tên công ty>` để query tự nhiên về thông tin liên hệ truy xuất đúng chunk liên hệ hơn.
@@ -61,13 +63,13 @@ Tại thời điểm cập nhật sau `p2/2`, phần chunking trong code đã c�
 
 `tai_lieu/p2/10.txt` là bài hoàn thiện chatbot với các cải tiến và sửa lỗi. Phần đã phản ánh trong code hiện tại gồm tạo `core/startup.py` để khởi tạo `SparseEmbedder`, `BM25` và `CrossEncoderReranker` từ corpus trong Qdrant; sửa `vectorstore/qdrant.py` để tạo collection kiểu hybrid có named vector `dense` và sparse vector `sparse` khi collection chưa tồn tại; sửa `vectorstore/upsert.py` để fit `SparseEmbedder`, gọi `init_sparse_embedder(...)`, build hybrid point bằng `build_hybrid_qdrant_points(...)` và upsert hybrid points; sửa `api/app.py` để gọi `initialize_rag_components()` trong lifespan startup; sửa `api/health.py` để trả trạng thái RAG components; và sửa `api/routes/chat.py` để dùng `hybrid_retrieve()`, BM25, reranker và rate limit in-memory.
 
-Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, reranking bằng CrossEncoder, context builder, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `vectorstore/upsert.py` hiện đã gọi luồng build hybrid point, `vectorstore/qdrant.py` hiện tạo collection hybrid khi collection chưa tồn tại, `scoring/bm25.py` đã có class `BM25`, `retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`, `reranking` đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker`, còn `retrieval/context_builder.py` đã có class `ContextBuilder`. `api/app.py` hiện gọi `initialize_rag_components()` lúc startup. Endpoint `POST /api/chat` hiện dùng hybrid retriever, BM25, reranker và `ContextBuilder`, nhưng vẫn gọi legacy `llm/generator.py`. Endpoint `POST /api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và vẫn gọi `llm/generator_openai.py` (OpenRouter). Frontend hiện gọi `POST /api/chat/openai`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant theo schema cũ. Sau cập nhật `p2/10`, pipeline build/upsert hybrid points và đã chạy thành công: sau khi xoá collection cũ dense-only, collection `nmk_chatbot_collection` được tạo lại đúng schema hybrid (named vector `dense` + sparse vector `sparse`) với 450 points. `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `api/routes/chat.py` và `api/routes/chat_openai.py`.
+Mã nguồn hiện tại đã có phần dense embedding, sparse embedding, hybrid index, BM25 scorer, hybrid retriever, reranking bằng CrossEncoder, context builder, schema `RetrievedDocument`, prompt template, legacy Ollama generator, OpenRouter generator bằng OpenAI Agents SDK, FastAPI backend và frontend Next.js. `backend/embedding/sparse_embedder.py` đã tồn tại và có code cho `tokenize()` cùng class `SparseEmbedder`. `backend/vectorstore/hybrid_index.py` đã có code build point với named vector `dense` và `sparse`, `backend/vectorstore/upsert.py` hiện đã gọi luồng build hybrid point, `backend/vectorstore/qdrant.py` hiện tạo collection hybrid khi collection chưa tồn tại, `backend/scoring/bm25.py` đã có class `BM25`, `backend/retrieval/hybrid_retriever.py` đã có hàm `hybrid_retrieve(query, bm25)`, `backend/reranking` đã có `BaseReranker`, `CrossEncoderModel` và `CrossEncoderReranker`, còn `backend/retrieval/context_builder.py` đã có class `ContextBuilder`. `backend/api/app.py` hiện gọi `initialize_rag_components()` lúc startup. Endpoint `POST /api/chat` hiện dùng hybrid retriever, BM25, reranker và `ContextBuilder`, nhưng vẫn gọi legacy `backend/llm/generator.py`. Endpoint `POST /api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và vẫn gọi `backend/llm/generator_openai.py` (OpenRouter). Frontend hiện gọi `POST /api/chat/openai`. Người dùng đã từng chạy thành công `uv run python -m ingestion.pipeline` sau buổi 5, tạo collection `nmk_chatbot_collection` và upsert 450 chunks vào Qdrant theo schema cũ. Sau cập nhật `p2/10`, pipeline build/upsert hybrid points và đã chạy thành công: sau khi xoá collection cũ dense-only, collection `nmk_chatbot_collection` được tạo lại đúng schema hybrid (named vector `dense` + sparse vector `sparse`) với 450 points. `chat.py` ở thư mục gốc đã được xoá; luồng chat hiện nằm trong `backend/api/routes/chat.py` và `backend/api/routes/chat_openai.py`.
 
 ## Mục Tiêu Dự Án
 
 Đây là dự án học Python RAG để xây dựng chatbot trả lời thông tin về công ty Nguyen Minh Khang Architects.
 
-Dữ liệu raw hiện tại vẫn có bảng `heroSlides`, nhưng `data/processed/heroSlides.json` không còn được sử dụng trong code chunking hoặc pipeline ingestion hiện tại.
+Dữ liệu raw hiện tại vẫn có bảng `heroSlides`, nhưng `backend/data/processed/heroSlides.json` không còn được sử dụng trong code chunking hoặc pipeline ingestion hiện tại.
 
 Dự án hiện đi theo hướng RAG, không phải fine-tuning. Dữ liệu được xử lý thành các chunk có thể truy xuất, sau đó dùng làm ngữ cảnh cho LLM khi trả lời câu hỏi.
 
@@ -75,27 +77,30 @@ Dự án hiện đi theo hướng RAG, không phải fine-tuning. Dữ liệu đ
 
 Các thư mục chính hiện có:
 
-- `config`: chứa cấu hình YAML cho ứng dụng và logging.
-- `core`: chứa mã dùng chung để đọc settings, cấu hình logging, schema dùng chung và startup helper cho BM25/reranker.
-- `api`: chứa FastAPI backend, health check, chat route legacy và chat route OpenRouter.
-- `data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
+- `backend`: runtime root của toàn bộ Python backend, gồm các folder liệt kê dưới đây; lệnh backend chạy từ `backend/`.
+- `backend/config`: chứa cấu hình YAML cho ứng dụng và logging.
+- `backend/core`: chứa mã dùng chung để đọc settings, cấu hình logging, schema dùng chung và startup helper cho BM25/reranker.
+- `backend/api`: chứa FastAPI backend, health check, chat route legacy và chat route OpenRouter.
+- `backend/data`: chứa dữ liệu gốc và dữ liệu đã tách theo bảng.
 - `frontend`: chứa frontend Next.js, React, TypeScript và Tailwind CSS cho giao diện chat.
-- `ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
-- `ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu đang dùng; `heroSlides.py` đã bị xoá khỏi code chunking hiện tại.
-- `ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
-- `embedding`: chứa mã load model dense embedding, tạo embedding theo batch và sparse embedder dựa trên token/TF-IDF.
-- `vectorstore`: chứa code kết nối Qdrant, tạo collection hybrid khi collection chưa tồn tại, build point dense-only cũ, build point hybrid và upsert chunk vào Qdrant.
-- `retrieval`: chứa code truy vấn Qdrant bằng dense embedding query, code hybrid retriever có BM25 score và chuẩn hóa kết quả về `RetrievedDocument`.
-- `scoring`: chứa code tính điểm BM25 cho query/document.
-- `reranking`: chứa code rerank document bằng CrossEncoder trước khi build context cho LLM.
-- `llm`: chứa prompt template, legacy Ollama generator và OpenRouter generator dùng OpenAI Agents SDK.
-- `logs`: chứa file log của ứng dụng.
+- `backend/ingestion`: chứa mã nạp dữ liệu, pipeline ingestion và xử lý dữ liệu đầu vào.
+- `backend/ingestion/chunking`: chứa mã chunking theo từng bảng dữ liệu đang dùng; `heroSlides.py` đã bị xoá khỏi code chunking hiện tại.
+- `backend/ingestion/helpers`: chứa helper tạo metadata và chia đoạn text.
+- `backend/embedding`: chứa mã load model dense embedding, tạo embedding theo batch và sparse embedder dựa trên token/TF-IDF.
+- `backend/vectorstore`: chứa code kết nối Qdrant, tạo collection hybrid khi collection chưa tồn tại, build point dense-only cũ, build point hybrid và upsert chunk vào Qdrant.
+- `backend/retrieval`: chứa code truy vấn Qdrant bằng dense embedding query, code hybrid retriever có BM25 score và chuẩn hóa kết quả về `RetrievedDocument`.
+- `backend/scoring`: chứa code tính điểm BM25 cho query/document.
+- `backend/reranking`: chứa code rerank document bằng CrossEncoder trước khi build context cho LLM.
+- `backend/llm`: chứa prompt template, legacy Ollama generator và OpenRouter generator dùng OpenAI Agents SDK.
+- `backend/logs`: chứa file log của ứng dụng.
 - `report`: chứa tài liệu báo cáo trạng thái dự án.
 - `tai_lieu`: chứa phiên âm các buổi học.
-- `tests`: chứa automated tests cho luồng OpenRouter mới, không gọi API thật.
+- `backend/tests`: chứa automated tests cho luồng OpenRouter mới, không gọi API thật.
 - `qdrant_storage`: chứa dữ liệu local do Qdrant Docker container tạo ra.
 
 ## Phần Đã Có Mã Nguồn
+
+Sau refactor layout ngày 2026-08-04, toàn bộ path Python backend trong mục này nằm trong thư mục `backend/`, ví dụ `backend/core/settings_loader.py`.
 
 `core/settings_loader.py` đã có hàm `load_settings()`. Hàm này đọc `config/settings.yaml`, nạp biến môi trường từ `.env`, sau đó ghi đè một số giá trị cấu hình bằng biến môi trường nếu các biến đó tồn tại.
 
@@ -181,26 +186,29 @@ Các thư mục chính hiện có:
 
 Các file sau hiện tồn tại nhưng đang rỗng:
 
-- `api/__init__.py`
-- `core/__init__.py`
-- `embedding/__init__.py`
-- `ingestion/__init__.py`
-- `ingestion/chunking/__init__.py`
-- `ingestion/helpers/__init__.py`
-- `llm/__init__.py`
-- `reranking/__init__.py`
-- `reranking/models/__init__.py`
-- `retrieval/__init__.py`
-- `scoring/__init__.py`
-- `vectorstore/__init__.py`
+- `backend/api/__init__.py`
+- `backend/core/__init__.py`
+- `backend/embedding/__init__.py`
+- `backend/ingestion/__init__.py`
+- `backend/ingestion/chunking/__init__.py`
+- `backend/ingestion/helpers/__init__.py`
+- `backend/llm/__init__.py`
+- `backend/reranking/__init__.py`
+- `backend/reranking/models/__init__.py`
+- `backend/retrieval/__init__.py`
+- `backend/scoring/__init__.py`
+- `backend/vectorstore/__init__.py`
 
 Các file `__init__.py` rỗng hiện chỉ đóng vai trò package marker.
 
 ## Trạng Thái Chạy Hiện Tại
 
+Các lệnh `uv run` trong mục này từng chạy từ root trước refactor layout ngày 2026-08-04. Sau refactor, tất cả lệnh Python backend chạy từ `backend/`, ví dụ `cd backend && uv run python -m ingestion.pipeline`.
+
 Người dùng đã chạy Qdrant bằng Docker Compose và chạy thành công:
 
 ```bash
+cd backend
 uv run python -m ingestion.pipeline
 ```
 
@@ -289,10 +297,10 @@ Trong lần smoke test đầu, `stream_answer_async()` bị lỗi `TypeError: ob
 
 File dữ liệu gốc hiện có:
 
-- `data/raw/database_export_2026-01-14T02-32-14.json`
-- `data/raw/database_export_2026-01-23T02-02-46.json`
+- `backend/data/raw/database_export_2026-01-14T02-32-14.json`
+- `backend/data/raw/database_export_2026-01-23T02-02-46.json`
 
-Hai file raw này đã được kiểm tra bằng `sha256sum` và có checksum giống nhau, nên nội dung hiện tại giống hệt nhau. Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Tuy nhiên code hiện tại trong `ingestion/load_data.py` vẫn đang đọc trực tiếp `database_export_2026-01-14T02-32-14.json`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
+Hai file raw này đã được kiểm tra bằng `sha256sum` và có checksum giống nhau, nên nội dung hiện tại giống hệt nhau. Theo xác nhận của người dùng, các lần làm việc tiếp theo sẽ dùng file `database_export_2026-01-23T02-02-46.json`. Tuy nhiên code hiện tại trong `backend/ingestion/load_data.py` vẫn đang đọc trực tiếp `database_export_2026-01-14T02-32-14.json`; chưa có thay đổi code trong phiên cập nhật tài liệu này.
 
 Mỗi file raw có object `tables` gồm 10 bảng:
 
@@ -307,7 +315,7 @@ Mỗi file raw có object `tables` gồm 10 bảng:
 - `news`: 17 bản ghi
 - `users`: 0 bản ghi
 
-Các file đã được tách trong `data/processed`:
+Các file đã được tách trong `backend/data/processed`:
 
 - `architectureTypes.json`
 - `companyInfo.json`
@@ -318,7 +326,7 @@ Các file đã được tách trong `data/processed`:
 - `projectCategories.json`
 - `projects.json`
 
-`data/processed/heroSlides.json` vẫn tồn tại vì được tách từ bảng có dữ liệu trong raw export, nhưng file này không còn được dùng bởi module chunking hoặc `ingestion/pipeline.py`.
+`backend/data/processed/heroSlides.json` vẫn tồn tại vì được tách từ bảng có dữ liệu trong raw export, nhưng file này không còn được dùng bởi module chunking hoặc `backend/ingestion/pipeline.py`.
 
 Qdrant local hiện có dữ liệu trong `qdrant_storage/` do Docker Compose mount. Collection `nmk_chatbot_collection` hiện có schema hybrid (named vector `dense` + sparse vector `sparse`) và chứa 450 hybrid points theo log chạy pipeline hybrid.
 
@@ -328,7 +336,7 @@ Dự án dùng Python và quản lý môi trường bằng `uv`.
 
 File `pyproject.toml` yêu cầu Python `>=3.12`.
 
-CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-08-01 22:04 +07, `codegraph status .` ghi nhận index hiện có 64 files, 509 nodes, 854 edges, DB size 1.19 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
+CodeGraph đã được cài ở máy local với phiên bản `1.5.0` và đã được init cho repo này. Sau lần kiểm tra gần nhất ngày 2026-08-04 19:44 +07 (sau refactor layout khi các folder backend đã move vào `backend/`), `codegraph status .` ghi nhận index hiện có 65 files, 538 nodes, 916 edges, DB size 1.38 MB, backend `node:sqlite` với full WAL, journal `wal`, và `Index is up to date`.
 
 Thư mục `.codegraph/` là artifact local của CodeGraph, đã được thêm vào `.gitignore` và không nên commit.
 
@@ -336,9 +344,9 @@ Codex đã có MCP config cho CodeGraph trong cấu hình người dùng. Sau kh
 
 Theo tài liệu CodeGraph, auto-sync được bật mặc định sau `codegraph init`, nên graph được cập nhật khi file trong project thay đổi. Có thể chạy `codegraph sync` thủ công nếu cần đồng bộ lại.
 
-Cấu hình chính được đặt trong `config/settings.yaml`.
+Cấu hình chính được đặt trong `backend/config/settings.yaml`.
 
-Cấu hình logging được đặt trong `config/logging.yaml`.
+Cấu hình logging được đặt trong `backend/config/logging.yaml`.
 
 Biến môi trường được nạp bằng `python-dotenv`. Tài liệu này không ghi nội dung `.env`.
 
@@ -350,15 +358,16 @@ Qdrant đang được chạy bằng Docker Compose từ `docker-compose.yml`, se
 
 Nhà cung cấp LLM trong settings đang là `openrouter`, tên model đang là `qwen/qwen3.5-9b`, temperature là `0.2`.
 
-Code LLM legacy nằm trong `llm/generator.py`, không còn file `llm/llm.py` trong cây thư mục hiện tại. `llm/generator.py` chỉ có nhánh gọi Ollama khi `llm.provider == "ollama"` và được giữ nguyên để so sánh/rollback.
+Code LLM legacy nằm trong `backend/llm/generator.py`, không còn file `backend/llm/llm.py` trong cây thư mục hiện tại. `backend/llm/generator.py` chỉ có nhánh gọi Ollama khi `llm.provider == "ollama"` và được giữ nguyên để so sánh/rollback.
 
-Code LLM OpenRouter mới nằm trong `llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại. File có hai đường sinh câu trả lời: `generate_answer_async()` dùng `Runner.run()` trả full string, và `stream_answer_async()` dùng `Runner.run_streamed()` (sync, không `await`) yield từng text delta từ `stream_events()`.
+Code LLM OpenRouter mới nằm trong `backend/llm/generator_openai.py`. File này dùng OpenAI Agents SDK và OpenAI Python SDK để gọi OpenRouter qua endpoint OpenAI-compatible. File hiện tắt reasoning tokens cho OpenRouter để tránh câu trả lời rỗng với model hiện tại. File có hai đường sinh câu trả lời: `generate_answer_async()` dùng `Runner.run()` trả full string, và `stream_answer_async()` dùng `Runner.run_streamed()` (sync, không `await`) yield từng text delta từ `stream_events()`.
 
-Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, fit sparse embedder trên corpus chunk và build point hybrid dense+sparse để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/8`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Sau `p2/9`, repo có thêm folder `reranking` và `retrieval/context_builder.py`. Sau `p2/10`, `vectorstore/upsert.py` đã chuyển sang build/upsert hybrid points, `vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `core/startup.py` khởi tạo sparse embedder/BM25/reranker từ Qdrant lúc backend startup, và endpoint `POST /api/chat` dùng hybrid retrieval + reranker. `ContextBuilder` hiện được cả hai route chat dùng. Endpoint `POST /api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và vẫn dùng OpenRouter; response của endpoint này là SSE stream `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error` thay vì JSON một lần. Frontend hiện gọi endpoint OpenRouter qua `fetch` streaming và render Markdown live bằng `react-markdown` + `remark-gfm` (dependency mới đã cài trong `frontend/package.json`). Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `api/app.py`.
+Dữ liệu được xử lý theo hướng tách bảng, tạo chunk riêng theo từng nhóm dữ liệu đang dùng, tạo dense embedding theo batch, fit sparse embedder trên corpus chunk và build point hybrid dense+sparse để lưu vào Qdrant. Sau `p2/2`, `heroSlides.json` vẫn là dữ liệu processed nhưng không còn có module chunking và không còn nằm trong pipeline. Sau `p2/4`, repo có thêm `backend/embedding/sparse_embedder.py` để tạo sparse representation dạng `indices`/`values`. Sau `p2/5` tới `p2/8`, repo có thêm code hybrid index, BM25 scorer và hybrid retriever. Sau `p2/9`, repo có thêm folder `backend/reranking` và `backend/retrieval/context_builder.py`. Sau `p2/10`, `backend/vectorstore/upsert.py` đã chuyển sang build/upsert hybrid points, `backend/vectorstore/qdrant.py` tạo collection hybrid khi collection chưa tồn tại, `backend/core/startup.py` khởi tạo sparse embedder/BM25/reranker từ Qdrant lúc backend startup, và endpoint `POST /api/chat` dùng hybrid retrieval + reranker. `ContextBuilder` hiện được cả hai route chat dùng. Endpoint `POST /api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và vẫn dùng OpenRouter; response của endpoint này là SSE stream `text/event-stream` với các event `meta`/`delta`/`sources`/`done`/`error` thay vì JSON một lần. Frontend hiện gọi endpoint OpenRouter qua `fetch` streaming và render Markdown live bằng `react-markdown` + `remark-gfm` (dependency mới đã cài trong `frontend/package.json`). Entrypoint `chat.py` ở thư mục gốc đã được xoá; backend hiện chạy qua `backend/api/app.py`.
 
-Backend chạy bằng:
+Backend chạy bằng (từ `backend/`):
 
 ```bash
+cd backend
 uv run python -m api.app
 ```
 

@@ -3,6 +3,7 @@
 ## Nhật Ký Cập Nhật
 
 - 2026-07-26 12:23 +07 - Tạo tài liệu hướng dẫn chạy Qdrant bằng Docker Compose sau khi hoàn thành buổi 5 và upsert dữ liệu thành công.
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: lệnh ingestion chạy từ `backend/`; `qdrant_storage/` và `docker-compose.yml` vẫn nằm ở root kể cả khi code backend đã chuyển vào `backend/`.
 
 ## Nhiệm Vụ Của File
 
@@ -33,6 +34,8 @@ Docker Compose bản mới có thể cảnh báo `version is obsolete` nếu fil
 Thư mục này được Docker tạo khi chạy Qdrant.
 
 Đây là nơi lưu dữ liệu local của Qdrant, bao gồm collection và point đã upsert. Không xóa thư mục này nếu muốn giữ dữ liệu vector store.
+
+`qdrant_storage/` vẫn nằm ở root workspace kể cả sau refactor layout khi code backend đã chuyển vào `backend/`. Mount trong `docker-compose.yml` vẫn là `./qdrant_storage:/qdrant/storage`.
 
 ## Lệnh Chạy Qdrant
 
@@ -99,9 +102,10 @@ Với cấu hình hiện tại, dữ liệu vẫn được giữ nếu thư mụ
 
 ## Lệnh Ingestion Sau Khi Qdrant Chạy
 
-Sau khi Qdrant đã chạy, có thể chạy pipeline bằng `uv`:
+Sau khi Qdrant đã chạy, có thể chạy pipeline bằng `uv` từ `backend/`:
 
 ```bash
+cd backend
 uv run python -m ingestion.pipeline
 ```
 

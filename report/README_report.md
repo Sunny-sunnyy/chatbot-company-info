@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật mô tả `Project_status.md` sau refactor layout: `Project_status.md` hiện ghi nhận `backend/` là runtime root của Python backend, các folder backend nằm trong `backend/`, lệnh backend chạy từ `backend/` và số liệu CodeGraph mới nhất (65 files, 538 nodes, 916 edges).
 - 2026-08-04 17:33 +07 - Cập nhật mô tả `Project_status.md` sau khi triển khai streaming + Markdown: `/api/chat/openai` trả SSE, `stream_answer_async()` dùng `Runner.run_streamed`, frontend dùng `fetch` + `react-markdown`, tests cập nhật theo SSE contract và smoke test E2E stream 276 delta thành công.
 - 2026-08-04 15:41 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` tắt Uvicorn reload để tránh WatchFiles reload toàn repo làm kẹt backend startup.
 - 2026-08-01 22:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xác nhận `/api/chat/openai` dùng hybrid retrieval và cập nhật số liệu CodeGraph mới nhất.
@@ -69,7 +70,7 @@ Nội dung hiện có:
 - Ghi chú tích hợp hiện tại: `/api/chat` dùng hybrid/reranker/ContextBuilder nhưng gọi legacy `llm/generator.py`; `/api/chat/openai` dùng hybrid/reranker/ContextBuilder, gọi OpenRouter qua OpenAI Agents SDK và trả SSE stream `text/event-stream` (`meta`/`delta`/`sources`/`done`/`error`); frontend hiện gọi `/api/chat/openai` qua `fetch` streaming và render Markdown live bằng `react-markdown` + `remark-gfm`.
 - Mốc sau khi triển khai streaming + Markdown (2026-08-04 17:33 +07): `llm/generator_openai.py` có `stream_answer_async()` dùng `Runner.run_streamed()` (sync, không `await`); `api/routes/chat_openai.py` trả `StreamingResponse`; `frontend/lib/api.ts` có `sendMessageStream()` dùng `fetch` + buffer parse SSE; `ChatInterface.tsx` append delta vào assistant placeholder và render bằng `ReactMarkdown`; tests route/generator cập nhật theo SSE contract, smoke test E2E stream 276 delta thành công.
 - Trạng thái dữ liệu raw hiện có hai file export giống hệt nhau theo checksum; từ các lần làm việc tiếp theo người dùng muốn dùng `database_export_2026-01-23T02-02-46.json`, trong khi code hiện tại vẫn đọc file ngày `2026-01-14`.
-- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 64 files, 509 nodes, 854 edges, backend `node:sqlite` full WAL.
+- Trạng thái CodeGraph mới nhất: CLI `1.5.0`, index `up to date`, 65 files, 538 nodes, 916 edges, backend `node:sqlite` full WAL.
 
 ### `README_report.md`
 

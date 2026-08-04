@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: thư mục `vectorstore` đã nằm trong `backend/`; lệnh pipeline từ `backend/`; `qdrant_storage/` và `docker-compose.yml` vẫn ở root.
 - 2026-08-04 16:12 +07 - Rebuild collection `nmk_chatbot_collection` sau thay đổi chunk liên hệ: xoá collection local bị duplicate do UUID chunk mới mỗi lần pipeline, chạy lại ingestion và xác nhận collection hiện có 450 hybrid points.
 - 2026-08-01 20:28 +07 - Cập nhật trạng thái sau khi kiểm tra log chạy thật: pipeline hybrid đã chạy thành công, collection `nmk_chatbot_collection` đã có schema hybrid và chứa 450 points; lỗi `Not existing vector name error: sparse` chỉ xảy ra ở lần chạy đầu với collection cũ dense-only.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
@@ -196,7 +197,7 @@ Trạng thái hiện tại:
 
 ## Trạng Thái Chạy Hiện Tại
 
-Sau buổi 5, người dùng đã bật Qdrant bằng Docker Compose, chạy:
+Sau buổi 5, người dùng đã bật Qdrant bằng Docker Compose và chạy pipeline (thời điểm đó từ root; từ refactor layout 2026-08-04, lệnh này chạy từ `backend/`):
 
 ```bash
 uv run python -m ingestion.pipeline

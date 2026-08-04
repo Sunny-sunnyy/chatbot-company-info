@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: backend code nằm trong `backend/`; lệnh ingestion và backend chạy từ `backend/`; Qdrant và frontend vẫn chạy từ root.
 - 2026-08-01 22:04 +07 - Sửa trạng thái `/api/chat/openai`: route OpenRouter hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder`, không còn dùng dense-only retriever.
 - 2026-08-01 20:28 +07 - Cập nhật trạng thái sau khi kiểm tra log chạy thật: pipeline hybrid đã chạy thành công, collection `nmk_chatbot_collection` đã có schema hybrid và chứa 450 points; lỗi `Not existing vector name error: sparse` chỉ xảy ra ở lần chạy đầu với collection cũ dense-only.
 - 2026-08-01 17:58 +07 - Viết lại hướng dẫn chạy theo trạng thái repo hiện tại: dùng `uv`, Qdrant hybrid, backend FastAPI và frontend Next.js.
@@ -26,9 +27,10 @@ curl http://localhost:6333/health
 
 ## 2. Nạp Dữ Liệu Vào Qdrant
 
-Chạy ingestion pipeline:
+Chạy ingestion pipeline từ `backend/`:
 
 ```bash
+cd backend
 uv run python -m ingestion.pipeline
 ```
 
@@ -46,9 +48,10 @@ Trạng thái hiện tại: pipeline hybrid đã chạy thành công; collection
 
 ## 3. Chạy Backend
 
-Từ thư mục gốc project:
+Từ `backend/`:
 
 ```bash
+cd backend
 uv run python -m api.app
 ```
 
@@ -110,5 +113,7 @@ POST /api/chat/openai
 `POST /api/chat` dùng `hybrid_retrieve()`, BM25 và reranker, nhưng vẫn gọi legacy `llm/generator.py`. File generator legacy này chỉ hỗ trợ provider `ollama`.
 
 `POST /api/chat/openai` dùng `hybrid_retrieve()`, BM25, reranker, `ContextBuilder` và `llm/generator_openai.py`. Route này phù hợp với `llm.provider: openrouter` trong `config/settings.yaml` và không còn dùng dense-only `retrieval/retriever.py`.
+
+Các path code trên nằm trong `backend/`, ví dụ `backend/llm/generator.py`, `backend/config/settings.yaml`.
 
 Frontend hiện gọi `POST /api/chat/openai`.

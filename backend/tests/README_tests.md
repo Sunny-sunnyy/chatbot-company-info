@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 19:44 +07 - Cập nhật sau refactor layout: thư mục `tests` đã nằm trong `backend/`; lệnh chạy test từ `backend/` bằng `uv run pytest tests/ -q`.
 - 2026-08-04 17:33 +07 - Cập nhật sau khi chuyển `/api/chat/openai` sang SSE: `tests/test_api_chat_openai.py` consume `StreamingResponse.body_iterator` và parse SSE, happy path kiểm tra chuỗi event `meta` → nhiều `delta` → `sources` → `done`, case không có documents, case reranker, session lưu full answer, 503/429; `tests/test_llm_generator_openai.py` thêm test `stream_answer_async()` bằng fake `Runner.run_streamed` (sync) với `ResponseTextDeltaEvent` và test bỏ qua event không phải text delta.
 - 2026-08-01 22:04 +07 - Bổ sung mô tả `tests/test_context_builder.py` và cập nhật trạng thái test theo route OpenRouter hybrid hiện tại.
 - 2026-08-01 20:40 +07 - Cập nhật sau khi nâng cấp `/api/chat/openai` lên v2: test route giờ cover luồng hybrid + rate limit 429 + BM25 chưa sẵn sàng 503.
@@ -79,7 +80,7 @@ Vai trò hiện tại:
 
 ## Cách Chạy Hiện Tại
 
-Chạy các test mới từ thư mục gốc:
+Chạy các test từ `backend/`:
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_llm_generator_openai.py tests/test_api_chat_openai.py tests/test_context_builder.py -q

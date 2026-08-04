@@ -4,9 +4,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-SETTINGS_PATH = BASE_DIR / "config" / "settings.yaml"
-ENV_PATH = BASE_DIR / ".env"
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = BACKEND_DIR.parent
+SETTINGS_PATH = BACKEND_DIR / "config" / "settings.yaml"
+ENV_PATH = PROJECT_ROOT / ".env"
 
 
 load_dotenv(ENV_PATH)
