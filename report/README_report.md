@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 15:41 +07 - Cập nhật mô tả `Project_status.md` sau khi `api/app.py` tắt Uvicorn reload để tránh WatchFiles reload toàn repo làm kẹt backend startup.
 - 2026-08-01 22:04 +07 - Cập nhật mô tả `Project_status.md` sau khi xác nhận `/api/chat/openai` dùng hybrid retrieval và cập nhật số liệu CodeGraph mới nhất.
 - 2026-08-01 20:40 +07 - Cập nhật mô tả `Project_status.md` sau khi nâng cấp `/api/chat/openai` lên v2 và ghi nhận pipeline hybrid chạy thành công.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra trạng thái hiện tại.
@@ -56,7 +57,7 @@ Nội dung hiện có:
 - Trạng thái frontend hiện gọi endpoint OpenRouter mới và có hướng dẫn đổi lại endpoint cũ trong README frontend.
 - Trạng thái automated tests mới trong thư mục `tests`.
 - Trạng thái tắt OpenRouter reasoning trong `llm/generator_openai.py`.
-- Trạng thái `uv run python -m api.app` hiện bind `0.0.0.0:8000` và bật Uvicorn `reload=True` theo code hiện tại.
+- Trạng thái `uv run python -m api.app` hiện bind `0.0.0.0:8000` và tắt Uvicorn `reload` theo code hiện tại để tránh WatchFiles reload toàn repo trong lúc startup.
 - Chuẩn README hiện tại cho các folder có file Python thật.
 - Mốc bắt đầu giai đoạn nâng cao trên branch `UpdateV2` theo bài giới thiệu `tai_lieu/p2/0.txt`, đồng thời phân biệt rõ nội dung định hướng với trạng thái code đã triển khai.
 - Mốc sau `tai_lieu/p2/2.txt`: code chunking hiện đã bỏ `heroSlides.py`, pipeline không còn gọi hero slides, các chunk còn lại dùng metadata có `chunk_id`, `chunk_type` và `priority`, và kiểm tra trực tiếp các hàm chunking hiện tạo tổng cộng 450 chunks trước khi upsert.

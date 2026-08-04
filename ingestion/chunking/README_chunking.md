@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 16:03 +07 - Cập nhật `companyInfo.py`: chunk `contact_info` hiện thêm câu mở đầu `Thông tin liên hệ của <tên công ty>` trước Hotline/Email/Địa chỉ để query tự nhiên về liên hệ match trực tiếp hơn.
 - 2026-07-24 20:06 +07 - Tạo tài liệu đầu tiên cho thư mục sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
 - 2026-07-24 20:18 +07 - Chuyển toàn bộ nội dung sang tiếng Việt có dấu và chỉ mô tả trạng thái hiện có.
 - 2026-07-24 21:18 +07 - Cập nhật trạng thái sau khi thêm `heroSlides.py` và đối chiếu các file chunking hiện có.
@@ -114,6 +115,7 @@ Vai trò và luồng hoạt động:
 - `companyInfo.py` chịu trách nhiệm tạo các chunk trả lời câu hỏi tổng quan về công ty và thông tin liên hệ.
 - `chunk_company_info()` đọc `companyInfo.json`, chuẩn hóa dữ liệu thành list, rồi duyệt từng bản ghi công ty.
 - File tách một bản ghi công ty thành nhiều nhóm chunk có độ ưu tiên khác nhau: `overview`, `description` và `contact_info`.
+- Chunk `contact_info` hiện bắt đầu bằng câu `Thông tin liên hệ của <tên công ty>:` rồi mới liệt kê Hotline, Email, Địa chỉ, Giờ làm việc, Website và Mạng xã hội. Cách viết này giúp các query tự nhiên như `thông tin liên hệ` match trực tiếp với chunk liên hệ thay vì chỉ dựa vào các từ khóa `Hotline` hoặc `Email`.
 - Phần mạng xã hội được chuyển từ dictionary sang text dạng `key: value` trước khi đưa vào chunk liên hệ.
 - Output là list chunk đã có metadata chung `type="company_info"` và metadata riêng theo từng `chunk_type`.
 

@@ -117,7 +117,7 @@ def chunk_company_info():
             if company_social_text:
                 text_parts.append(f"Mạng xã hội: {company_social_text}")
             chunks.append({
-                "text": "\n".join(text_parts),
+                "text": f"Thông tin liên hệ của {company_name}:\n" + "\n".join(text_parts),
                 "metadata": make_metadata(base_metadata, chunk_type="contact_info", priority=CHUNK_PRIORITY["contact_info"])
             })
         

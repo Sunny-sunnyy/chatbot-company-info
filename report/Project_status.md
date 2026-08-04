@@ -2,6 +2,9 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 16:03 +07 - Cập nhật `ingestion/chunking/companyInfo.py`: chunk `contact_info` thêm cụm `Thông tin liên hệ của <tên công ty>` để query tự nhiên về thông tin liên hệ truy xuất đúng chunk liên hệ hơn.
+- 2026-08-04 16:12 +07 - Rebuild collection Qdrant local `nmk_chatbot_collection` sau thay đổi chunk liên hệ: xoá collection local bị duplicate, chạy lại `ingestion.pipeline`, collection sạch hiện có 450 hybrid points và query `thông tin liên hệ` đưa `company_info/contact_info` lên top 1.
+- 2026-08-04 15:41 +07 - Sửa lỗi backend bị WatchFiles reload/kẹt startup khi chạy `uv run python -m api.app`: `api/app.py` hiện tắt Uvicorn `reload`, vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 22:04 +07 - Kiểm tra lại `api/routes/chat_openai.py` và sửa tài liệu: `/api/chat/openai` hiện dùng hybrid retrieval + BM25 + reranker + `ContextBuilder`, không dùng dense-only retriever; cập nhật trạng thái CodeGraph mới nhất.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2 (hybrid retrieval + BM25 + reranker + ContextBuilder, vẫn dùng OpenRouter qua OpenAI Agents SDK) và ghi nhận pipeline hybrid đã chạy thành công với collection hybrid 450 points.
 - 2026-07-24 20:06 +07 - Tạo bản ghi trạng thái dự án sau khi đọc phiên âm buổi 1, buổi 2 và kiểm tra mã nguồn hiện tại.
@@ -100,7 +103,7 @@ Các thư mục chính hiện có:
 
 `core/startup.py` đã có các hàm `initialize_rag_components()`, `get_bm25()`, `get_reranker()` và `get_initialization_status()`. File này load corpus từ Qdrant bằng `client.scroll(...)`, fit `SparseEmbedder`, khởi tạo `BM25`, tính average document length, khởi tạo `CrossEncoderModel` và bọc bằng `CrossEncoderReranker`. Trạng thái hiện tại: `api/app.py` gọi `initialize_rag_components()` trong lifespan startup; `api/health.py` gọi `get_initialization_status()`; `api/routes/chat.py` gọi `get_bm25()` và `get_reranker()`. File phụ thuộc Qdrant đã có collection/points và có thể load CrossEncoder model thật khi `initialize_rag_components()` chạy.
 
-`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, định nghĩa lifespan startup/shutdown, gọi `initialize_rag_components()` khi startup, cấu hình CORS, thêm middleware `track_response_time` để gắn header `X-Response-Time`, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `0.0.0.0`, port `8000` và bật `reload=True`.
+`api/app.py` đã có FastAPI app. File này gọi `setup_logging()`, định nghĩa lifespan startup/shutdown, gọi `initialize_rag_components()` khi startup, cấu hình CORS, thêm middleware `track_response_time` để gắn header `X-Response-Time`, đăng ký `GET /`, `GET /health`, `POST /api/chat` và `POST /api/chat/openai`, đồng thời có block chạy Uvicorn khi dùng `uv run python -m api.app`. Block này hiện bind `0.0.0.0`, port `8000` và tắt `reload` để tránh WatchFiles theo dõi toàn repo và restart/kẹt startup khi Qdrant/log/cache thay đổi.
 
 `api/health.py` đã có endpoint `GET /health`. Endpoint kiểm tra kết nối Qdrant, thử load embedding model, trả cấu hình LLM provider/model và trả trạng thái RAG components từ `core.startup.get_initialization_status()`. Health check này có thể load embedding model khi được gọi.
 
@@ -115,7 +118,7 @@ Các thư mục chính hiện có:
 `ingestion/chunking` hiện có các module chunking cho nhiều bảng dữ liệu đã xử lý:
 
 - `architectureTypes.py`: tạo chunk cho loại kiến trúc từ `architectureTypes.json`.
-- `companyInfo.py`: tạo chunk tổng quan, mô tả và thông tin liên hệ công ty từ `companyInfo.json`.
+- `companyInfo.py`: tạo chunk tổng quan, mô tả và thông tin liên hệ công ty từ `companyInfo.json`; chunk `contact_info` hiện có câu mở đầu `Thông tin liên hệ của <tên công ty>` trước Hotline/Email/Địa chỉ để hỗ trợ query tự nhiên về liên hệ.
 - `interiorStyles.py`: tạo chunk cho phong cách nội thất từ `interiorStyles.json`.
 - `newCategories.py`: tạo chunk cho danh mục tin tức từ `newsCategories.json`.
 - `news.py`: chuyển HTML tin tức sang text, chia nội dung thành đoạn và tạo chunk từ `news.json`.
@@ -348,7 +351,7 @@ Backend chạy bằng:
 uv run python -m api.app
 ```
 
-Lệnh này hiện bật Uvicorn `reload=True` trong `api/app.py` và bind `0.0.0.0:8000`.
+Lệnh này hiện tắt Uvicorn `reload` trong `api/app.py` và bind `0.0.0.0:8000`.
 
 Frontend chạy trong terminal riêng bằng:
 

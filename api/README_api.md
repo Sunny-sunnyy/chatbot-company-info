@@ -2,6 +2,7 @@
 
 ## Nhật Ký Cập Nhật
 
+- 2026-08-04 15:41 +07 - Tắt `reload=True` trong entrypoint `api/app.py` để tránh WatchFiles reload toàn repo khi Qdrant/log/cache thay đổi trong lúc startup; backend vẫn bind `0.0.0.0:8000`.
 - 2026-08-01 20:40 +07 - Cập nhật trạng thái sau khi nâng cấp `/api/chat/openai` lên v2: route dùng hybrid retrieval + BM25 + reranker + `ContextBuilder` và có rate limit in-memory theo IP; `/api/chat` cũng chuyển sang dùng `ContextBuilder`.
 - 2026-07-26 21:02 +07 - Tạo README cho thư mục `api` sau buổi 7, đối chiếu với mã nguồn FastAPI hiện tại.
 - 2026-07-27 16:03 +07 - Bổ sung mô tả route OpenRouter mới `POST /api/chat/openai` và trạng thái đăng ký router trong `api/app.py`.
@@ -46,7 +47,7 @@ Nội dung chính:
 - Đăng ký `chat_router` với prefix `/api`.
 - Đăng ký `chat_openai_router` với prefix `/api`.
 - Định nghĩa endpoint root `GET /`.
-- Nếu chạy file bằng module, gọi `uvicorn.run("api.app:app", host="0.0.0.0", port=8000, reload=True)`.
+- Nếu chạy file bằng module, gọi `uvicorn.run("api.app:app", host="0.0.0.0", port=8000, reload=False)`.
 
 Vai trò và luồng hoạt động:
 
