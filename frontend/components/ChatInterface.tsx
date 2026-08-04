@@ -3,22 +3,42 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Bot, User, Image as ImageIcon } from 'lucide-react';
+import { Send, Bot, User, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import { chatService, type ChatMessage } from '@/lib/api';
+
+const SCROLL_THRESHOLD = 100;
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
+  };
+
+  const scrollToBottomSmooth = () => {
+    shouldAutoScrollRef.current = true;
+    setShowScrollButton(false);
+    const container = scrollRef.current;
+    if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const distance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    shouldAutoScrollRef.current = distance <= SCROLL_THRESHOLD;
+    setShowScrollButton(distance > SCROLL_THRESHOLD);
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) scrollToBottom();
   }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,6 +46,9 @@ export default function ChatInterface() {
     if (!input.trim() || isLoading) return;
 
     const question = input;
+
+    shouldAutoScrollRef.current = true;
+    setShowScrollButton(false);
 
     setMessages((prev) => [...prev, { role: 'user', content: question }]);
     setMessages((prev) => [...prev, { role: 'assistant', content: '', sources: [] }]);
@@ -91,7 +114,7 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 to-green-100">
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto" ref={scrollRef} onScroll={handleScroll}>
         <div className="max-w-4xl mx-auto px-4 py-6">
           {messages.length === 0 ? (
             <div className="text-center py-12">
@@ -221,10 +244,19 @@ export default function ChatInterface() {
                 </div>
                 );
               })}
-              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
+        {showScrollButton && (
+          <button
+            type="button"
+            onClick={scrollToBottomSmooth}
+            aria-label="Cuộn xuống cuối"
+            className="absolute bottom-4 right-4 p-2 rounded-full bg-green-600 text-white shadow-lg hover:bg-green-700 transition-colors"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <div className="bg-white border-t border-gray-200">
